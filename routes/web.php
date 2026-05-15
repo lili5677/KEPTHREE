@@ -34,8 +34,10 @@ Route::middleware('auth')->group(function () {
     Route::delete('/admin/template/{template}',       [TemplateController::class, 'destroy']) ->name('admin.template.destroy');
     Route::get('/admin/template/{template}/download', [TemplateController::class, 'download'])->name('admin.template.download');
 
+    // ===== ASSIGN SEKRETARIS (tampilan statis, belum integrasi DB) =====
+    Route::get('/admin/sekretaris', fn() => view('admin.sekretaris.index'))->name('admin.sekretaris.index');
+
     // ===== PLACEHOLDER (belum ada controller) =====
-    Route::get('/admin/sekretaris', fn() => abort(404))->name('admin.sekretaris.index');
     Route::get('/admin/dokumen', fn() => abort(404))->name('admin.dokumen.index');
     Route::get('/admin/ethical-clearance', fn() => abort(404))->name('admin.ethical-clearance.index');
     Route::get('/admin/log', fn() => abort(404))->name('admin.log.index');
