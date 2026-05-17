@@ -110,13 +110,16 @@
         {{-- Sumber Pendanaan --}}
         <div class="form-group">
             <label class="kep-label" for="sumber_pendanaan">
-                Sumber Pendanaan
-                <span style="font-size:.75rem;font-weight:400;color:var(--text-muted);">(Opsional)</span>
+                Sumber Pendanaan <span class="req">*</span>
             </label>
             <input type="text" id="sumber_pendanaan" name="sumber_pendanaan"
-                   class="kep-input"
-                   placeholder="Nama institusi atau organisasi pendana"
-                   value="{{ old('sumber_pendanaan', session('pengajuan_step1.sumber_pendanaan')) }}">
+                class="kep-input @error('sumber_pendanaan') is-invalid @enderror"
+                placeholder="Nama institusi atau organisasi pendana"
+                value="{{ old('sumber_pendanaan', session('pengajuan_step1.sumber_pendanaan')) }}"
+                required>
+            @error('sumber_pendanaan')
+                <div class="field-error">{{ $message }}</div>
+            @enderror
         </div>
 
         <div class="d-flex" style="justify-content:flex-end;margin-top:1.5rem;padding-top:1.25rem;border-top:1px solid var(--border);">

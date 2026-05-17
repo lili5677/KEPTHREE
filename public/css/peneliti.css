@@ -1,5 +1,5 @@
 /* ════════════════════════════════════════════════════════════
-   SISTEM KEP — peneliti.css
+   KEPTHREE — peneliti.css
    ════════════════════════════════════════════════════════════ */
 
 @import url('https://fonts.bunny.net/css?family=instrument-sans:400,500,600');
@@ -62,7 +62,7 @@ img { max-width: 100%; }
     position: fixed;
     top: 0; left: 0; bottom: 0;
     z-index: 200;
-    transition: width var(--transition);
+    transition: width var(--transition), transform var(--transition);
     overflow: hidden;
 }
 
@@ -85,13 +85,13 @@ img { max-width: 100%; }
 }
 
 .brand-shield {
-    width: 36px; height: 36px;
-    background: var(--blue-accent);
+    width: 38px; height: 38px;
+    background: #d0e3f0;
     border-radius: 10px;
     display: flex; align-items: center; justify-content: center;
     color: #fff; font-size: 1rem;
     flex-shrink: 0;
-    box-shadow: 0 2px 8px rgba(74,127,167,.35);
+    box-shadow: 0 2px 8px rgba(0,0,0,.25);
 }
 
 .brand-text { flex: 1; min-width: 0; overflow: hidden; }
@@ -1052,13 +1052,232 @@ body.sidebar-collapsed #main { margin-left: var(--sidebar-collapsed-w); }
 }
 
 @media (max-width: 768px) {
-    #sidebar { transform: translateX(-100%); }
-    #sidebar.mobile-open { transform: translateX(0); }
-    #main { margin-left: 0 !important; padding: 1rem; }
-    .topbar { display: flex; }
+    #sidebar {
+        transform: translateX(-100%);
+        width: var(--sidebar-w) !important;
+        transition: transform var(--transition), width var(--transition);
+    }
+    #sidebar.mobile-open {
+        transform: translateX(0);
+    }
+
+    #main {
+        margin-left: 0 !important;
+        padding: 1rem;
+        padding-top: calc(1rem + 60px);
+    }
+
+    .topbar {
+        display: flex;
+        position: fixed;
+        top: 0; left: 0; right: 0;
+        z-index: 100;
+    }
+
     .stat-grid { grid-template-columns: 1fr; }
     .form-row  { grid-template-columns: 1fr; }
     .kep-card  { padding: 1.25rem; }
+
+    #sidebar.collapsed { width: var(--sidebar-w) !important; }
+    #sidebar.collapsed .sidebar-brand-content { display: flex !important; }
+    #sidebar.collapsed .sidebar-brand {
+        justify-content: flex-start !important;
+        padding: 0 1rem !important;
+        gap: .85rem !important;
+    }
+    #sidebar.collapsed .sidebar-expand-btn { display: none !important; }
+    #sidebar.collapsed .nav-item {
+        justify-content: flex-start !important;
+        padding: .65rem .85rem !important;
+        gap: .8rem !important;
+    }
+    #sidebar.collapsed .nav-label {
+        opacity: 1 !important;
+        width: auto !important;
+        overflow: visible !important;
+    }
+    #sidebar.collapsed .nav-section-label {
+        opacity: 1 !important;
+        height: auto !important;
+        padding: .75rem .85rem .3rem !important;
+        overflow: visible !important;
+    }
+    #sidebar.collapsed .user-info { display: block !important; }
+    #sidebar.collapsed .logout-btn span { display: inline !important; }
+    #sidebar.collapsed .sidebar-footer { padding: 1rem .75rem !important; }
+    #sidebar.collapsed .user-card {
+        justify-content: flex-start !important;
+        padding: .5rem .5rem !important;
+    }
+    #sidebar.collapsed .nav-item i { width: 22px !important; margin: 0 !important; }
+}
+
+/* ════════════════════════════════════════════════════════════
+   RESPONSIVE — Step Wizard Pages
+   ════════════════════════════════════════════════════════════ */
+
+/* ── Step Indicator mobile ── */
+@media (max-width: 600px) {
+    .step-indicator {
+        gap: 0;
+    }
+
+    .step-circle {
+        width: 32px;
+        height: 32px;
+        font-size: .78rem;
+    }
+
+    .step-label {
+        display: none;
+    }
+
+    .step-connector {
+        margin: 15px .3rem 0;
+    }
+}
+
+@media (max-width: 768px) {
+    .form-row-3 {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 600px) {
+    .confirm-section {
+        padding: 1rem;
+    }
+
+    .confirm-row {
+        flex-direction: column;
+        gap: .25rem;
+        padding: .6rem 0;
+    }
+
+    .confirm-key {
+        min-width: unset;
+        font-size: .78rem;
+        color: var(--blue-accent);
+        font-weight: 600;
+    }
+
+    .confirm-value {
+        font-size: .875rem;
+    }
+}
+
+@media (max-width: 600px) {
+    .doc-confirm-item {
+        flex-wrap: wrap;
+        gap: .65rem;
+        padding: .75rem;
+    }
+
+    .doc-file-icon {
+        width: 34px;
+        height: 34px;
+        font-size: .95rem;
+        border-radius: 8px;
+    }
+
+    .doc-confirm-info {
+        flex: 1;
+        min-width: 0;
+    }
+
+    .doc-confirm-name {
+        font-size: .82rem;
+        white-space: normal;  
+        word-break: break-word;
+    }
+
+    .doc-confirm-actions {
+        width: 100%;
+        padding-left: calc(34px + .85rem);
+        flex-wrap: wrap;
+        gap: .4rem;
+    }
+}
+
+@media (max-width: 600px) {
+    .kep-checkbox-label {
+        font-size: .82rem;
+        padding: .85rem 1rem;
+        gap: .6rem;
+    }
+}
+
+/* ── Preview Modal mobile ── */
+@media (max-width: 600px) {
+    #previewModal {
+        padding: .5rem !important;
+        align-items: flex-end !important;
+    }
+
+    #previewModal > div {
+        max-width: 100% !important;
+        width: 100% !important;
+        height: 92vh !important;
+        max-height: none !important;
+        border-radius: 16px 16px 0 0 !important;
+    }
+
+    #previewModal > div > div:first-child {
+        padding: .85rem 1rem !important;
+    }
+
+    #modalFileName {
+        font-size: .82rem !important;
+        max-width: 220px !important;
+    }
+}
+
+/* ── Upload zone mobile ── */
+@media (max-width: 600px) {
+    .upload-zone {
+        padding: 1.15rem 1rem;
+    }
+
+    .upload-icon {
+        font-size: 1.4rem;
+        margin-bottom: .4rem;
+    }
+
+    .upload-title {
+        font-size: .82rem;
+    }
+
+    .upload-hint {
+        font-size: .72rem;
+    }
+
+    .file-pill {
+        padding: .55rem .75rem;
+        gap: .6rem;
+    }
+
+    .file-pill-icon {
+        width: 30px;
+        height: 30px;
+        font-size: .9rem;
+    }
+
+    .file-pill-name {
+        font-size: .8rem;
+    }
+}
+
+/* ── Action buttons baris (Kembali / Selanjutnya) ── */
+@media (max-width: 480px) {
+    .d-flex.justify-between[style*="border-top"] {
+        flex-direction: column-reverse;
+        gap: .65rem;
+    }
+
+    .d-flex.justify-between[style*="border-top"] .btn-kep {
+        width: 100%;
+        justify-content: center;
+    }
 }
 
 /* ── Utility ── */

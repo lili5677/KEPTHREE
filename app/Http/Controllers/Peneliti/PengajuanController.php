@@ -87,13 +87,14 @@ class PengajuanController extends Controller
             'title'                => 'required|string|max:255',
             'program_studi'        => 'required|string|max:255',
             'ringkasan_penelitian' => 'required|string|min:50',
-            'sumber_pendanaan'     => 'nullable|string|max:255',
+            'sumber_pendanaan'     => 'required|string|max:255',
             'durasi_penelitian'    => 'required|integer|min:1|max:120',
         ], [
             'title.required'                => 'Judul penelitian wajib diisi.',
             'program_studi.required'        => 'Program studi wajib diisi.',
             'ringkasan_penelitian.required' => 'Ringkasan penelitian wajib diisi.',
             'ringkasan_penelitian.min'      => 'Ringkasan penelitian minimal 50 karakter.',
+            'sumber_pendanaan.required'     => 'Sumber pendanaan wajib diisi.',
             'durasi_penelitian.required'    => 'Durasi penelitian wajib diisi.',
         ]);
 

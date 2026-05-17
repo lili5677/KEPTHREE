@@ -4,12 +4,12 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>@yield('title', 'Dashboard') — Sistem KEP</title>
+    <title>@yield('title', 'Dashboard') — KEPTHREE</title>
 
     <link rel="icon" type="image/png" sizes="32x32"  href="{{ asset('favicon-32x32.png') }}">
     <link rel="icon" type="image/png" sizes="16x16"  href="{{ asset('favicon-16x16.png') }}">
     <link rel="apple-touch-icon" sizes="180x180"      href="{{ asset('apple-touch-icon.png') }}">
-    <link rel="shortcut icon" href="{{ asset('favicon.ico') }}">
+    <link rel="shortcut icon" href="{{ asset('kepicon.ico') }}">
 
     <link rel="preconnect" href="https://fonts.bunny.net">
     <link href="https://fonts.bunny.net/css?family=instrument-sans:400,500,600" rel="stylesheet">
@@ -33,11 +33,17 @@
             <i class="bi bi-list"></i>
         </button>
         <div style="display:flex;align-items:center;gap:.6rem;">
-            <div style="width:28px;height:28px;background:var(--blue-accent);border-radius:8px;
-                        display:flex;align-items:center;justify-content:center;color:#fff;font-size:.85rem;">
-                <i class="bi bi-shield-check"></i>
+            <div style="width:32px;height:32px;background:#d0e3f0;border-radius:10px;
+                        display:flex;align-items:center;justify-content:center;
+                        box-shadow:0 2px 8px rgba(0,0,0,.15);overflow:hidden;flex-shrink:0;">
+                <img src="{{ asset('favicon-32x32.png') }}"
+                    alt="Logo KEPTHREE"
+                    style="width:26px;height:26px;object-fit:contain;">
             </div>
-            <span style="font-weight:600;font-size:.9rem;color:var(--navy-deep);">Sistem KEP</span>
+            <div style="display:flex;flex-direction:column;line-height:1.2;">
+                <span style="font-weight:600;font-size:.9rem;color:var(--navy-deep);">KEPTHREE</span>
+                <span style="font-size:.7rem;color:var(--text-muted);font-weight:500;">Peneliti</span>
+            </div>
         </div>
     </div>
 
@@ -48,10 +54,12 @@
         <div class="sidebar-brand">
             {{-- Brand content: visible only when expanded --}}
             <div class="brand-shield sidebar-brand-content">
-                <i class="bi bi-shield-check"></i>
+                <img src="{{ asset('favicon-32x32.png') }}" 
+                    alt="Logo KEPTHREE" 
+                    style="width:30px;height:30px;object-fit:contain;">
             </div>
             <div class="brand-text sidebar-brand-content">
-                <div class="name">Sistem KEP</div>
+                <div class="name">KEPTHREE</div>
                 <div class="role">Peneliti</div>
             </div>
             {{-- Collapse btn: visible when expanded --}}
@@ -131,7 +139,8 @@
 {{-- Sidebar overlay (mobile) --}}
 <div id="sidebarOverlay"
      style="display:none;position:fixed;inset:0;background:rgba(10,25,49,.45);
-            z-index:150;backdrop-filter:blur(2px);"
+            z-index:150;backdrop-filter:blur(2px);
+            opacity:0;transition:opacity .22s cubic-bezier(.4,0,.2,1);"
      onclick="closeMobileSidebar()"></div>
 
 <script>
@@ -141,6 +150,10 @@ const bodyEl       = document.body;
 const collapseBtn  = document.getElementById('sidebarCollapseBtn');
 const expandBtn    = document.getElementById('sidebarExpandBtn');
 const COLLAPSE_KEY = 'kep_sidebar_collapsed';
+
+function isMobile() {
+    return window.innerWidth <= 768;
+}
 
 function setSidebarState(collapsed) {
     if (collapsed) {
@@ -153,16 +166,21 @@ function setSidebarState(collapsed) {
     localStorage.setItem(COLLAPSE_KEY, collapsed ? '1' : '0');
 }
 
-// Restore saved state on load
+// Restore saved state on load — hanya berlaku di desktop
 (function () {
-    if (localStorage.getItem(COLLAPSE_KEY) === '1') {
+    if (!isMobile() && localStorage.getItem(COLLAPSE_KEY) === '1') {
         setSidebarState(true);
     }
 })();
 
 collapseBtn.addEventListener('click', function (e) {
     e.stopPropagation();
-    setSidebarState(true);
+    if (isMobile()) {
+        // Di mobile, tombol collapse menutup sidebar (kembali ke topbar)
+        closeMobileSidebar();
+    } else {
+        setSidebarState(true);
+    }
 });
 
 expandBtn.addEventListener('click', function (e) {
@@ -172,16 +190,45 @@ expandBtn.addEventListener('click', function (e) {
 
 /* ── Mobile sidebar ── */
 function openMobileSidebar() {
+    const overlay = document.getElementById('sidebarOverlay');
+    overlay.style.display = 'block';
+    overlay.getBoundingClientRect();
+    overlay.style.opacity = '1';
     sidebar.classList.add('mobile-open');
-    document.getElementById('sidebarOverlay').style.display = 'block';
 }
+
 function closeMobileSidebar() {
+    const overlay = document.getElementById('sidebarOverlay');
+    overlay.style.opacity = '0';
     sidebar.classList.remove('mobile-open');
-    document.getElementById('sidebarOverlay').style.display = 'none';
+    setTimeout(function () {
+        overlay.style.display = 'none';
+    }, 220);
 }
 
 const mobileToggle = document.getElementById('mobileToggle');
 if (mobileToggle) mobileToggle.addEventListener('click', openMobileSidebar);
+
+/* ── Handle resize: desktop <-> mobile ── */
+let lastMobile = isMobile();
+window.addEventListener('resize', function () {
+    const nowMobile = isMobile();
+    if (nowMobile === lastMobile) return;
+    lastMobile = nowMobile;
+
+    if (!nowMobile) {
+        // Beralih ke desktop: tutup mobile overlay, restore collapse state
+        closeMobileSidebar();
+        if (localStorage.getItem(COLLAPSE_KEY) === '1') {
+            setSidebarState(true);
+        } else {
+            setSidebarState(false);
+        }
+    } else {
+        // Beralih ke mobile: pastikan sidebar tertutup (di luar layar)
+        closeMobileSidebar();
+    }
+});
 
 /* ── Auto-dismiss flash alerts ── */
 document.querySelectorAll('.kep-alert.flash-alert').forEach(function (el) {
