@@ -14,7 +14,7 @@ return new class extends Migration
         Schema::create('protocols', function (Blueprint $table) {
             $table->id();
             $table->foreignId('user_id')->constrained('users')->onDelete('cascade');
-            $table->foreignId('sekretaris_id')->nullable()->constrained('users')->nullOnDelete();
+            $table->foreignId('sekretariat_id')->nullable()->constrained('users')->nullOnDelete();
             $table->foreignId('ketua_penandatangan_id')->nullable()->constrained('users')->nullOnDelete();
             $table->string('title');
             $table->string('program_studi');

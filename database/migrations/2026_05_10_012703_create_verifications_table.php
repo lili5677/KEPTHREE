@@ -14,7 +14,7 @@ return new class extends Migration
         Schema::create('verifications', function (Blueprint $table) {
             $table->id();
             $table->foreignId('protocol_id')->constrained('protocols')->onDelete('cascade');
-            $table->foreignId('sekretaris_id')->constrained('users')->onDelete('cascade');
+            $table->foreignId('sekretariat_id')->constrained('users')->onDelete('cascade');
             $table->enum('review_type', ['full_board', 'expedited', 'exempted']);
             $table->enum('keputusan', ['approved', 'rejected']);
             $table->text('catatan')->nullable();
