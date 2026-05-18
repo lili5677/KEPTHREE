@@ -3,6 +3,7 @@
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\UserManagementController;
+use App\Http\Controllers\Peneliti\PengajuanController;
 use App\Http\Controllers\Admin\TemplateController;
 
 Route::get('/register', [AuthController::class, 'showRegister'])->name('register');
@@ -40,4 +41,35 @@ Route::middleware('auth')->group(function () {
     Route::get('/admin/ethical-clearance', fn() => abort(404))->name('admin.ethical-clearance.index');
     Route::get('/admin/log', fn() => abort(404))->name('admin.log.index');
 
+});
+
+Route::middleware(['auth', 'peneliti'])->prefix('peneliti')->name('peneliti.')->group(function () {
+ 
+    // Dashboard
+    Route::get('/dashboard', [PengajuanController::class, 'dashboard'])
+         ->name('dashboard');
+ 
+    // Step Wizard Pengajuan Baru
+    Route::get ('/pengajuan/baru',            [PengajuanController::class, 'create'])      ->name('pengajuan.create');
+    Route::post('/pengajuan/step1',            [PengajuanController::class, 'storeStep1'])  ->name('pengajuan.step1');
+    Route::get ('/pengajuan/step2',            [PengajuanController::class, 'step2'])       ->name('pengajuan.step2');
+    Route::post('/pengajuan/step2',            [PengajuanController::class, 'storeStep2'])  ->name('pengajuan.step2.store');
+    Route::get ('/pengajuan/step3',            [PengajuanController::class, 'step3'])       ->name('pengajuan.step3');
+    Route::post('/pengajuan/submit',           [PengajuanController::class, 'submit'])      ->name('pengajuan.submit');
+
+    // Preview dokumen dari session (PDF inline) — digunakan oleh step3
+    Route::get('/pengajuan/preview/{index}',   [PengajuanController::class, 'previewDoc'])  ->name('pengajuan.preview')
+         ->where('index', '[0-9]+');
+
+    // Auto-save via AJAX
+    Route::post('/pengajuan/step2/auto-save', [PengajuanController::class, 'autoSaveStep2'])
+         ->name('pengajuan.step2.auto-save');
+ 
+    // Riwayat — coming soon
+    Route::get('/riwayat', [PengajuanController::class, 'riwayat'])
+         ->name('riwayat');
+ 
+    // Template — coming soon 
+    Route::get('/template', [PengajuanController::class, 'template'])
+         ->name('template');
 });
