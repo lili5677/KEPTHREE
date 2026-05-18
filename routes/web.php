@@ -27,6 +27,11 @@ Route::middleware('auth')->group(function () {
     Route::get('/admin/users/create', [UserManagementController::class, 'create'])->name('admin.users.create');
     Route::post('/admin/users', [UserManagementController::class, 'store'])->name('admin.users.store');
 
+     // Tambahan PB-04
+    Route::put('/admin/users/{user}', [UserManagementController::class, 'update'])->name('admin.users.update');
+    Route::patch('/admin/users/{user}/deactivate', [UserManagementController::class, 'deactivate'])->name('admin.users.deactivate');
+    Route::patch('/admin/users/{user}/activate', [UserManagementController::class, 'activate'])->name('admin.users.activate');
+    
     // ===== TEMPLATE =====
     Route::get('/admin/template',                     [TemplateController::class, 'index'])   ->name('admin.template.index');
     Route::post('/admin/template',                    [TemplateController::class, 'store'])   ->name('admin.template.store');
