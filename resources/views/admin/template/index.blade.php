@@ -1,4 +1,3 @@
-@extends('layouts.admin')
 
 @section('title', 'Manajemen Template')
 
@@ -1041,4 +1040,3 @@ document.getElementById('tmDeleteOverlay').addEventListener('click', function (e
 });
 </script>
 
-@endsection
