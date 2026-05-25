@@ -5,6 +5,7 @@ use App\Http\Controllers\AuthController;
 use App\Http\Controllers\UserManagementController;
 use App\Http\Controllers\Peneliti\PengajuanController;
 use App\Http\Controllers\Admin\TemplateController;
+use App\Http\Controllers\Peneliti\RiwayatController;
 use App\Http\Controllers\Peneliti\TemplateController as PenelitiTemplateController;
 
 Route::get('/register', [AuthController::class, 'showRegister'])->name('register');
@@ -71,9 +72,17 @@ Route::middleware(['auth', 'peneliti'])->prefix('peneliti')->name('peneliti.')->
     Route::post('/pengajuan/step2/auto-save', [PengajuanController::class, 'autoSaveStep2'])
          ->name('pengajuan.step2.auto-save');
  
-    // Riwayat — coming soon
-    Route::get('/riwayat', [PengajuanController::class, 'riwayat'])
-         ->name('riwayat');
+    // Riwayat Pengajuan Peneliti
+    Route::get('/riwayat', [RiwayatController::class, 'index'])
+          ->name('riwayat');
+ 
+    // Detail Pengajuan
+    Route::get('/riwayat/{protocol}', [RiwayatController::class, 'show'])
+          ->name('riwayat.show');
+     
+    // Download Dokumen Riwayat Pengajuan
+    Route::get('/riwayat/dokumen/{document}/download', [RiwayatController::class, 'downloadDokumen'])
+          ->name('riwayat.download');
  
     // Peneliti Unduh Template
     Route::get('/template', [PenelitiTemplateController::class, 'index'])
