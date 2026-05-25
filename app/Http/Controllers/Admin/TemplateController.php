@@ -32,8 +32,11 @@ class TemplateController extends Controller
             'file_template' => 'required|file|mimes:doc,docx|max:5120',
         ]);
 
-        $path = $request->file('file_template')
-                        ->store('templates', 'public');
+        $file     = $request->file('file_template');
+        $contents = file_get_contents($file->getPathname());
+        $filename = 'templates/' . uniqid() . '_' . time() . '.' . $file->getClientOriginalExtension();
+        Storage::disk('public')->put($filename, $contents);
+        $path = $filename;
 
         Template::create([
             'name'        => $request->nama_template,
@@ -82,10 +85,14 @@ class TemplateController extends Controller
                 'replaced_at' => now(),
             ]);
 
-            // Upload file baru, hapus file lama
+            // Hapus file lama, upload file baru
             Storage::disk('public')->delete($template->file_path);
-            $template->file_path = $request->file('file_template')
-                                           ->store('templates', 'public');
+
+            $file     = $request->file('file_template');
+            $contents = file_get_contents($file->getPathname());
+            $filename = 'templates/' . uniqid() . '_' . time() . '.' . $file->getClientOriginalExtension();
+            Storage::disk('public')->put($filename, $contents);
+            $template->file_path = $filename;
         }
 
         $template->name        = $request->nama_template;

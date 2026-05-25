@@ -5,6 +5,7 @@ use App\Http\Controllers\AuthController;
 use App\Http\Controllers\UserManagementController;
 use App\Http\Controllers\Peneliti\PengajuanController;
 use App\Http\Controllers\Admin\TemplateController;
+use App\Http\Controllers\Peneliti\TemplateController as PenelitiTemplateController;
 
 Route::get('/register', [AuthController::class, 'showRegister'])->name('register');
 Route::post('/register', [AuthController::class, 'register']);
@@ -50,7 +51,7 @@ Route::middleware('auth')->group(function () {
 
 Route::middleware(['auth', 'peneliti'])->prefix('peneliti')->name('peneliti.')->group(function () {
  
-    // Dashboard
+    // Dashboard Peneliti
     Route::get('/dashboard', [PengajuanController::class, 'dashboard'])
          ->name('dashboard');
  
@@ -74,7 +75,10 @@ Route::middleware(['auth', 'peneliti'])->prefix('peneliti')->name('peneliti.')->
     Route::get('/riwayat', [PengajuanController::class, 'riwayat'])
          ->name('riwayat');
  
-    // Template — coming soon 
-    Route::get('/template', [PengajuanController::class, 'template'])
+    // Peneliti Unduh Template
+    Route::get('/template', [PenelitiTemplateController::class, 'index'])
          ->name('template');
+     
+    Route::get('/template/{template}/download', [PenelitiTemplateController::class, 'download'])
+         ->name('template.download');
 });
