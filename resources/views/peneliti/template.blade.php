@@ -3,19 +3,12 @@
 
 @push('styles')
 <style>
-/* ════════════════════════════════════════
-   TEMPLATE PAGE — additional styles
-   (memperluas peneliti.css)
-   ════════════════════════════════════════ */
-
-/* ── Grid kartu template ── */
 .template-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
     gap: 1.25rem;
 }
 
-/* ── Kartu template ── */
 .template-card {
     background: var(--white);
     border: 1px solid var(--border);
@@ -50,7 +43,6 @@
     opacity: 1;
 }
 
-/* ── Header kartu ── */
 .template-card-header {
     display: flex;
     align-items: flex-start;
@@ -89,7 +81,6 @@
     margin-bottom: .3rem;
 }
 
-/* ── Badge versi ── */
 .template-versi-badge {
     display: inline-flex;
     align-items: center;
@@ -104,7 +95,6 @@
     color: var(--navy-mid);
 }
 
-/* ── Deskripsi ── */
 .template-desc {
     font-size: .82rem;
     color: var(--text-muted);
@@ -117,7 +107,6 @@
     overflow: hidden;
 }
 
-/* ── Meta info (format, diperbarui) ── */
 .template-meta {
     display: flex;
     flex-wrap: wrap;
@@ -137,7 +126,6 @@
     color: var(--blue-accent);
 }
 
-/* ── Tombol unduh ── */
 .btn-download {
     display: inline-flex;
     align-items: center;
@@ -178,14 +166,12 @@
     color: var(--text-muted);
 }
 
-/* ── Divider di footer kartu ── */
 .template-card-footer {
     padding-top: .85rem;
     border-top: 1px solid var(--border);
     margin-top: auto;
 }
 
-/* ── Panduan ── */
 .usage-guide {
     background: var(--blue-pale);
     border: 1px solid var(--blue-light);
@@ -230,7 +216,6 @@
     line-height: 1.3;
 }
 
-/* ── Empty state (tidak ada template) ── */
 .template-empty {
     text-align: center;
     padding: 3.5rem 2rem;
@@ -251,7 +236,6 @@
     line-height: 1.6;
 }
 
-/* ── Responsive ── */
 @media (max-width: 640px) {
     .template-grid {
         grid-template-columns: 1fr;
