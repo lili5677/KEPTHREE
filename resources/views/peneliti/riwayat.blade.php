@@ -4,7 +4,7 @@
 @section('content')
 
 <div class="page-header">
-    <h1 style="font-size:2rem;">Riwayat Pengajuan</h1>
+    <h1>Riwayat Pengajuan</h1>
     <p>Lihat semua pengajuan protokol penelitian Anda</p>
 </div>
 
@@ -105,14 +105,14 @@
         {{-- ── Kiri: info utama ────────────────────────────────── --}}
         <div style="flex:1;min-width:0;">
 
-            <div class="protocol-meta">
+            <div class="protocol-meta" style="margin-bottom:.5rem;">
                 <span class="protocol-reg">{{ $item->nomor_registrasi ?? '—' }}</span>
                 <span class="kep-badge {{ $badge['class'] }}">{{ $badge['label'] }}</span>
             </div>
 
-            <div class="protocol-title">{{ $item->title }}</div>
+            <div class="protocol-title" style="font-size:1.08rem;margin-bottom:.55rem;line-height:1.4;">{{ $item->title }}</div>
 
-            <div class="protocol-sub d-flex gap-2 flex-wrap" style="margin-top:.2rem;">
+            <div class="protocol-sub d-flex gap-2 flex-wrap" style="margin-top:0;">
                 <span>
                     <i class="bi bi-mortarboard" style="font-size:.8rem;"></i>
                     {{ $item->program_studi }}
@@ -302,6 +302,25 @@
     background: #dc2626;
     border-color: #dc2626;
     color: #fff;
+}
+
+.protocol-item {
+    padding: 1.1rem 1.4rem;
+    gap: 1.25rem;
+}
+
+.protocol-meta {
+    gap: .5rem;
+}
+
+.protocol-reg {
+    font-size: .8rem;
+}
+
+.protocol-sub {
+    font-size: .8rem;
+    gap: .5rem !important;
+    color: var(--text-muted);
 }
 
 .activity-entry {

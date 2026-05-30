@@ -18,8 +18,8 @@
 @endphp
 
 {{-- ══ PAGE HEADER ══════════════════════════════════════════════════ --}}
-<div style="display:flex;align-items:flex-start;justify-content:space-between;
-            flex-wrap:wrap;gap:1rem;margin-bottom:2rem;">
+<div class="page-header" style="display:flex;align-items:flex-start;
+            justify-content:space-between;flex-wrap:wrap;gap:1rem;">
     <div>
         {{-- Breadcrumb --}}
         <div style="display:flex;align-items:center;gap:.5rem;
@@ -33,16 +33,13 @@
         </div>
 
         <div style="display:flex;align-items:center;gap:.75rem;flex-wrap:wrap;">
-            <h1 style="font-size:2rem;font-weight:600;color:var(--navy-deep);
-                       letter-spacing:-.02em;line-height:1.2;">
-                Detail Pengajuan
-            </h1>
+            <h1>Detail Pengajuan</h1>
             <span class="kep-badge {{ $badge['class'] }}" style="font-size:.78rem;padding:.3rem .8rem;">
                 {{ $badge['label'] }}
             </span>
         </div>
 
-        <p style="color:var(--text-muted);font-size:.9rem;margin-top:.3rem;">
+        <p>
             {{ $protocol->nomor_registrasi ?? 'Nomor belum ditetapkan' }}
             &nbsp;·&nbsp;
             Diajukan {{ $tanggal }} WIB
@@ -65,10 +62,10 @@
 </div>
 
 {{-- ══ GRID UTAMA ═══════════════════════════════════════════════════ --}}
-<div style="display:grid;grid-template-columns:1fr 340px;gap:1.5rem;align-items:start;">
+<div style="display:grid;grid-template-columns:1fr 340px;gap:1.5rem;align-items:start;min-width:0;">
 
     {{-- ── KOLOM KIRI ─────────────────────────────────────────────── --}}
-    <div style="display:flex;flex-direction:column;gap:1.25rem;">
+    <div style="display:flex;flex-direction:column;gap:1.25rem;min-width:0;overflow:hidden;">
 
         {{-- Informasi Umum --}}
         <div class="kep-card">
@@ -92,9 +89,11 @@
                 <span class="confirm-key">Durasi Penelitian</span>
                 <span class="confirm-value">{{ $protocol->durasi_penelitian }} bulan</span>
             </div>
-            <div class="confirm-row" style="border-bottom:none;">
+            <div class="confirm-row" style="border-bottom:none;align-items:flex-start;">
                 <span class="confirm-key">Ringkasan Penelitian</span>
-                <span class="confirm-value" style="line-height:1.6;">
+                <span class="confirm-value"
+                      style="line-height:1.6;word-break:break-word;
+                             overflow-wrap:break-word;min-width:0;flex:1;">
                     {{ $protocol->ringkasan_penelitian }}
                 </span>
             </div>
@@ -142,15 +141,17 @@
     <div style="display:flex;flex-direction:column;gap:1.25rem;">
 
         {{-- Status Pengajuan --}}
-        <div class="kep-card">
+        <div class="kep-card detail-status-card">
             <div class="kep-card-title">
                 <i class="bi bi-info-circle"></i> Status Pengajuan
             </div>
 
-            <div style="display:flex;align-items:center;justify-content:space-between;
-                        padding:.5rem 0;border-bottom:1px solid var(--border);margin-bottom:.85rem;">
-                <span style="font-size:.82rem;color:var(--text-muted);font-weight:500;">Status saat ini</span>
-                <span class="kep-badge {{ $badge['class'] }}">{{ $badge['label'] }}</span>
+            <div class="confirm-row" style="padding:.5rem 0;border-bottom:1px solid var(--border);
+                        margin-bottom:.85rem;align-items:center;">
+                <span class="confirm-key" style="min-width:120px;">Status Saat Ini</span>
+                <span class="kep-badge {{ $badge['class'] }}" style="font-size:.8rem;padding:.3rem .85rem;">
+                    {{ $badge['label'] }}
+                </span>
             </div>
 
             <div class="confirm-row" style="font-size:.85rem;">
@@ -208,6 +209,31 @@
     div[style*="grid-template-columns:1fr 340px"] {
         grid-template-columns: 1fr !important;
     }
+}
+
+.confirm-value {
+    word-break: break-word;
+    overflow-wrap: break-word;
+    min-width: 0;
+}
+
+.detail-status-card .confirm-row {
+    flex-direction: row !important;
+    align-items: center !important;
+    gap: 1rem !important;
+    padding: .6rem 0 !important;
+}
+
+.detail-status-card .confirm-key {
+    min-width: 120px !important;
+    font-size: .82rem !important;
+    color: var(--text-muted) !important;
+    font-weight: 500 !important;
+}
+
+.detail-status-card .confirm-value {
+    font-size: .875rem !important;
+    color: var(--navy-deep) !important;
 }
 
 .activity-placeholder {
