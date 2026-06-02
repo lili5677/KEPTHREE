@@ -11,7 +11,14 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware) {
+<<<<<<< HEAD
         //
+=======
+        $middleware->alias([
+            'admin'    => \App\Http\Middleware\CheckRoleAdmin::class,
+            'peneliti' => \App\Http\Middleware\CheckRolePeneliti::class,   
+        ]);
+>>>>>>> c479fca (Assign Sekretaris update)
     })
     ->withExceptions(function (Exceptions $exceptions) {
         //
