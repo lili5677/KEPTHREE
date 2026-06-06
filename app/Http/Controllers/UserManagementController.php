@@ -122,9 +122,8 @@ class UserManagementController extends Controller
                 ->with('error', 'Anda tidak dapat menonaktifkan akun sendiri.');
         }
 
-        $user->update([
-            'status' => 'nonaktif',
-        ]);
+        $user->status = 'nonaktif';
+        $user->save();
 
         return redirect()
             ->route('admin.users.index')
@@ -133,9 +132,8 @@ class UserManagementController extends Controller
 
     public function activate(User $user)
     {
-        $user->update([
-            'status' => 'aktif',
-        ]);
+        $user->status = 'aktif';
+        $user->save();
 
         return redirect()
             ->route('admin.users.index')

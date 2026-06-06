@@ -2,11 +2,11 @@
 
 namespace App\Models;
 
-// use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Spatie\Permission\Traits\HasRoles;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class User extends Authenticatable
 {
@@ -22,9 +22,7 @@ class User extends Authenticatable
         'name',
         'email',
         'password',
-        'address',
-        'phone',
-        'status',
+        'is_active',
     ];
 
     /**
@@ -46,7 +44,31 @@ class User extends Authenticatable
     {
         return [
             'email_verified_at' => 'datetime',
-            'password' => 'hashed',
+            'password'          => 'hashed',
+            'is_active'         => 'boolean',
         ];
+    }
+
+    // ─── Relasi ────────────────────────────────────────────────────
+
+    /** Protokol milik peneliti ini */
+    public function protocols(): HasMany
+    {
+        return $this->hasMany(Protocol::class, 'user_id');
+    }
+
+    /**
+     * Protokol yang ditangani user ini sebagai sekretaris.
+     * Digunakan untuk menghitung workload sekretaris.
+     */
+    public function handledProtocols(): HasMany
+    {
+        return $this->hasMany(Protocol::class, 'sekretariat_id');
+    }
+
+    /** Notifikasi untuk user ini */
+    public function appNotifications(): HasMany
+    {
+        return $this->hasMany(Notification::class, 'user_id');
     }
 }
