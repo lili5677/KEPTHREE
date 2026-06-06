@@ -7,6 +7,8 @@ use App\Http\Controllers\Peneliti\PengajuanController;
 use App\Http\Controllers\Admin\TemplateController;
 use App\Http\Controllers\Admin\AssignSekretarisController;
 use App\Http\Controllers\Peneliti\RiwayatController;
+use App\Http\Controllers\Sekretariat\DashboardController;
+use App\Http\Controllers\Sekretariat\VerifikasiController;
 use App\Http\Controllers\Peneliti\TemplateController as PenelitiTemplateController;
 
 Route::get('/register', [AuthController::class, 'showRegister'])->name('register');
@@ -23,11 +25,42 @@ Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 Route::middleware('auth')->group(function () {
 
     Route::get('/peneliti/dashboard', fn() => view('dashboard.peneliti'))->name('peneliti.dashboard.view');
-    Route::get('/sekretariat/dashboard', fn() => view('dashboard.sekretariat'))->name('sekretariat.dashboard');
+    Route::get('/sekretariat/dashboard', [DashboardController::class, 'index'])->name('sekretariat.dashboard');
+    Route::get('/verifikasi/download/{document}', [VerifikasiController::class, 'download'])->name('verifikasi.download');
     Route::get('/reviewer/dashboard', fn() => view('dashboard.reviewer'))->name('reviewer.dashboard');
     Route::get('/ketua/dashboard', fn() => view('dashboard.ketua'))->name('ketua.dashboard');
 
 });
+// =====================================================================
+// SEKRETARIAT PB-10
+// =====================================================================
+
+Route::middleware(['auth'])
+    ->prefix('sekretariat')
+    ->name('sekretariat.')
+    ->group(function () {
+
+        Route::get(
+            '/verifikasi',
+            [VerifikasiController::class, 'index']
+        )->name('verifikasi.index');
+
+        Route::get(
+            '/verifikasi/{protocol}',
+            [VerifikasiController::class, 'show']
+        )->name('verifikasi.show');
+
+        Route::post(
+            '/verifikasi/{protocol}/check',
+            [VerifikasiController::class, 'check']
+        )->name('verifikasi.check');
+
+        Route::get(
+            '/verifikasi/download/{document}',
+            [VerifikasiController::class, 'download']
+        )->name('verifikasi.download');
+
+    });
 
 
 // =====================================================================
