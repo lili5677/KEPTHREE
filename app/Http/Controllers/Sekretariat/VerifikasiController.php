@@ -32,11 +32,31 @@ class VerifikasiController extends Controller
             'catatan' => 'nullable|string',
         ]);
 
-        // Simpan ke tabel verifications (asumsikan tabel sudah ada)
+        // ========== VALIDASI DOKUMEN WAJIB (jika action = lengkap) ==========
+        if ($request->action == 'lengkap') {
+            // Cari dokumen wajib berdasarkan protocol_id dan type di database
+            $dokumenWajib = Document::where('protocol_id', $protocol->id)
+                ->whereIn('type', ['formular_pengajuan', 'formular_ringkasan'])
+                ->get();
+            
+            $semuaWajibTercentang = true;
+            foreach ($dokumenWajib as $doc) {
+                if (!$request->has('kelengkapan.' . $doc->id)) {
+                    $semuaWajibTercentang = false;
+                    break;
+                }
+            }
+            
+            if (!$semuaWajibTercentang) {
+                return back()->withErrors(['kelengkapan' => 'Harap centang semua dokumen wajib (Formulir Pengajuan dan Ringkasan Protokol).']);
+            }
+        }
+
+        // ========== SIMPAN KE TABEL VERIFICATIONS ==========
         $verification = Verification::updateOrCreate(
             ['protocol_id' => $protocol->id],
             [
-                'secretary_id' => Auth::id(),
+                'sekretariat_id' => Auth::id(),
                 'verified_at' => now(),
                 'notes' => $request->catatan,
                 'status' => $request->action,
@@ -44,7 +64,7 @@ class VerifikasiController extends Controller
             ]
         );
 
-        // Update status protocol
+        // ========== UPDATE STATUS PROTOCOL ==========
         if ($request->action == 'lengkap') {
             $protocol->status = 'ready_for_reviewer_assignment';
         } else {
@@ -58,9 +78,20 @@ class VerifikasiController extends Controller
 
     public function download(Document $document)
     {
-        if (!Storage::exists($document->file_path)) {
-            abort(404);
+        // Tentukan nama file untuk download (prioritaskan original_name, lalu name, lalu fallback)
+        $fileName = $document->original_name ?? $document->name ?? 'dokumen';
+        
+        // Cek di disk 'public' terlebih dahulu (storage/app/public)
+        if (Storage::disk('public')->exists($document->file_path)) {
+            return Storage::disk('public')->download($document->file_path, $fileName);
         }
-        return Storage::download($document->file_path, $document->original_name ?? 'dokumen');
+        
+        // Cek di disk default (storage/app)
+        if (Storage::exists($document->file_path)) {
+            return Storage::download($document->file_path, $fileName);
+        }
+        
+        // Jika file tidak ditemukan di kedua lokasi
+        abort(404, 'File tidak ditemukan. Path: ' . $document->file_path);
     }
 }

@@ -9,7 +9,12 @@ class Verification extends Model
     protected $table = 'verifications';
 
     protected $fillable = [
-        'protocol_id', 'secretary_id', 'verified_at', 'notes', 'status', 'review_type'
+        'protocol_id', 
+        'sekretariat_id', 
+        'verified_at', 
+        'notes', 
+        'status', 
+        'review_type'
     ];
 
     protected $casts = [
@@ -21,8 +26,8 @@ class Verification extends Model
         return $this->belongsTo(Protocol::class);
     }
 
-    public function secretary()
+    public function sekretariat()
     {
-        return $this->belongsTo(User::class, 'secretary_id');
+        return $this->belongsTo(User::class, 'sekretariat_id');
     }
 }

@@ -17,7 +17,7 @@
 <body class="bg-gray-50">
 
 <div class="flex flex-col md:flex-row min-h-screen">
-    <!-- ======================= SIDEBAR KIRI (sama dengan index) ======================= -->
+    <!-- ======================= SIDEBAR KIRI ======================= -->
     <aside class="w-full md:w-64 bg-white shadow-md flex flex-col justify-between">
         <div>
             <div class="p-5 border-b flex items-center gap-3">
@@ -85,59 +85,44 @@
                 <h2 class="text-xl font-semibold mb-4">Kelengkapan Dokumen</h2>
                 <div class="space-y-3">
                     @php
-                        // Mapping tipe dokumen dari database
-                        $requiredDocs = [
-                            'formulir_etik' => 'Formulir Pengajuan Telaah Etik Baru',
-                            'ringkasan_protokol' => 'Formulir Ringkasan Protokol Penelitian',
-                        ];
-                        $otherDocs = [
-                            'surat_pengantar' => 'Surat Pengantar',
-                            'proposal' => 'Proposal Penelitian',
-                            'icf' => 'ICF (Informed Consent Form)',
-                        ];
-                        $uploaded = [];
-                        foreach ($documents as $doc) {
-                            $uploaded[$doc->document_type] = $doc;
-                        }
+                        $wajibTypes = ['formular_pengajuan', 'formular_ringkasan'];
                     @endphp
 
-                    @foreach($requiredDocs as $key => $label)
-                        @php $exists = isset($uploaded[$key]); $docId = $exists ? $uploaded[$key]->id : null; @endphp
-                        <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                    @forelse($documents as $doc)
+                        @php
+                            $isWajib = in_array($doc->type, $wajibTypes);
+                            $label = match($doc->type) {
+                                'formular_pengajuan' => 'Formulir Pengajuan Telaah Etik Baru',
+                                'formular_ringkasan' => 'Formulir Ringkasan Protokol Penelitian',
+                                'pendukung' => $doc->name ?? 'Dokumen Pendukung',
+                                default => $doc->name ?? $doc->type ?? 'Dokumen'
+                            };
+                        @endphp
+                        <div class="flex items-center justify-between p-3 {{ $isWajib ? 'bg-indigo-50' : 'bg-gray-50' }} rounded-lg">
                             <div class="flex items-center gap-3">
-                                <input type="checkbox" name="kelengkapan[{{ $key }}]" value="1" class="w-5 h-5 text-indigo-600">
-                                <span class="font-medium">{{ $label }}</span>
+                                <input type="checkbox" 
+                                       name="kelengkapan[{{ $doc->id }}]" 
+                                       value="1" 
+                                       class="w-5 h-5 text-indigo-600">
+                                <span class="font-medium">
+                                    {{ $label }}
+                                    @if($isWajib)
+                                        <span class="text-xs text-red-500 ml-1">(Wajib)</span>
+                                    @endif
+                                </span>
                             </div>
                             <div class="flex items-center gap-4">
-                                <span class="text-sm {{ $exists ? 'text-green-600' : 'text-red-500' }}">
-                                    {{ $exists ? 'Tersedia' : 'Belum diunggah' }}
-                                </span>
-                                @if($exists)
-                                    <a href="{{ route('sekretariat.verifikasi.download', $docId) }}" class="text-indigo-600 text-sm hover:underline">Lihat</a>
-                                @else
-                                    <span class="text-gray-400 text-sm">Lihat</span>
-                                @endif
+                                <span class="text-sm text-green-600">Tersedia</span>
+                                <a href="{{ route('sekretariat.verifikasi.download', $doc->id) }}" class="text-indigo-600 text-sm hover:underline">
+                                    <i class="fas fa-download"></i> Download
+                                </a>
                             </div>
                         </div>
-                    @endforeach
-
-                    @foreach($otherDocs as $key => $label)
-                        @php $exists = isset($uploaded[$key]); $docId = $exists ? $uploaded[$key]->id : null; @endphp
-                        <div class="flex items-center justify-between p-3 bg-white border-b">
-                            <span class="font-medium">{{ $label }}</span>
-                            <div class="flex items-center gap-4">
-                                <span class="text-sm {{ $exists ? 'text-green-600' : 'text-red-500' }}">
-                                    {{ $exists ? 'Tersedia' : 'Belum diunggah' }}
-                                </span>
-                                @if($exists)
-                                    <a href="{{ route('sekretariat.verifikasi.download', $docId) }}" class="text-indigo-600 text-sm hover:underline">Lihat</a>
-                                @else
-                                    <span class="text-gray-400 text-sm">Lihat</span>
-                                @endif
-                            </div>
-                        </div>
-                    @endforeach
+                    @empty
+                        <p class="text-gray-500">Belum ada dokumen yang diunggah.</p>
+                    @endforelse
                 </div>
+                <p class="text-sm text-gray-500 mt-3 italic">* Centang semua dokumen yang diberi label (Wajib) sebelum melanjutkan verifikasi.</p>
                 @error('kelengkapan')
                     <p class="text-red-500 text-sm mt-2">{{ $message }}</p>
                 @enderror
