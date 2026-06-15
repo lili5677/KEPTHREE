@@ -139,6 +139,13 @@
                 </select>
             </div>
 
+                        <!-- Alasan Exempted (muncul hanya jika pilih exempted) -->
+            <div id="exempted_reason_container" class="bg-white rounded-xl shadow-sm p-5 mb-6" style="display: none;">
+                <h2 class="text-xl font-semibold mb-4">Alasan Exempted / Dasar Pertimbangan</h2>
+                <textarea name="exempted_reason" rows="3" class="w-full border rounded-lg p-2" placeholder="Jelaskan alasan penelitian ini exempted dari review penuh..."></textarea>
+                <p class="text-sm text-gray-500 mt-2 italic">Contoh: Penelitian risiko minimal, tidak melibatkan subjek rentan, menggunakan data sekunder anonim, dll.</p>
+            </div>
+
             <!-- Catatan Verifikasi -->
             <div class="bg-white rounded-xl shadow-sm p-5 mb-6">
                 <h2 class="text-xl font-semibold mb-4">Catatan Verifikasi</h2>
@@ -158,5 +165,15 @@
     </main>
 </div>
 
+<script>
+    document.getElementById('review_type').addEventListener('change', function() {
+        var container = document.getElementById('exempted_reason_container');
+        if (this.value === 'exempted') {
+            container.style.display = 'block';
+        } else {
+            container.style.display = 'none';
+        }
+    });
+</script>
 </body>
 </html>

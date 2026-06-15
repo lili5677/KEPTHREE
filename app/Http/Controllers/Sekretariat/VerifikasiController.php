@@ -54,23 +54,33 @@ class VerifikasiController extends Controller
 
         // ========== SIMPAN KE TABEL VERIFICATIONS ==========
         $verification = Verification::updateOrCreate(
-            ['protocol_id' => $protocol->id],
-            [
-                'sekretariat_id' => Auth::id(),
-                'verified_at' => now(),
-                'notes' => $request->catatan,
-                'status' => $request->action,
-                'review_type' => $request->action == 'lengkap' ? $request->review_type : null,
-            ]
-        );
+    ['protocol_id' => $protocol->id],
+    [
+        'sekretariat_id' => Auth::id(),
+        'verified_at' => now(),
+        'notes' => $request->catatan,
+        'exempted_reason' => $request->exempted_reason ?? null,
+        'status' => $request->action,
+        'review_type' => $request->action == 'lengkap' ? $request->review_type : null,
+    ]
+);
+
 
         // ========== UPDATE STATUS PROTOCOL ==========
         if ($request->action == 'lengkap') {
-            $protocol->status = 'ready_for_reviewer_assignment';
-        } else {
-            $protocol->status = 'revision_required';
-        }
-        $protocol->save();
+            if ($request->review_type == 'exempted') {
+                $protocol->status = 'approved';
+                 // TODO: Trigger pembuatan Surat Kelaikan Etik (PB-19)
+                 // TODO: Kirim notifikasi ke peneliti (PB-29)
+            } else {
+                // Expedited atau Full Board
+                $protocol->status = 'ready_for_reviewer_assignment';
+                }
+            } else {
+                $protocol->status = 'revision_required';
+            }
+            $protocol->save();
+
 
         return redirect()->route('sekretariat.verifikasi.index')
             ->with('success', 'Verifikasi berhasil disimpan.');
