@@ -8,7 +8,7 @@ use App\Models\User;
 use App\Models\Notification;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-
+use Spatie\Permission\PermissionRegistrar;
 
 class AssignSekretarisController extends Controller
 {
@@ -18,6 +18,9 @@ class AssignSekretarisController extends Controller
      */
     public function index()
     {
+        // Reset Spatie Permission cache agar data role terbaca fresh
+        app(PermissionRegistrar::class)->forgetCachedPermissions();
+
         // Protokol yang belum di-assign sekretaris (status new_proposal)
         $protocols = Protocol::with(['user', 'documents'])
             ->whereNull('sekretariat_id')
@@ -26,10 +29,11 @@ class AssignSekretarisController extends Controller
             ->get();
 
         // Semua user dengan role sekretariat beserta workload (jumlah protokol aktif)
+        // Gunakan 'protocols.status' agar tidak ambigu dengan kolom 'status' di tabel users
         $sekretarisList = User::role('sekretariat')
             ->withCount([
                 'handledProtocols as workload' => function ($q) {
-                    $q->whereNotIn('status', ['approved', 'rejected']);
+                    $q->whereNotIn('protocols.status', ['approved', 'rejected']);
                 }
             ])
             ->orderBy('workload')
