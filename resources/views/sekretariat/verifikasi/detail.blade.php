@@ -11,7 +11,10 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
 
     <style>
-        body { font-family: 'Instrument Sans', sans-serif; }
+    @import url('https://fonts.bunny.net/css?family=instrument-sans:400,500,600');
+    body {
+        font-family: 'Instrument Sans', sans-serif;
+    }
     </style>
 </head>
 <body class="bg-gray-50">
@@ -131,7 +134,8 @@
             <!-- Jenis Review -->
             <div class="bg-white rounded-xl shadow-sm p-5 mb-6">
                 <h2 class="text-xl font-semibold mb-4">Jenis Review</h2>
-                <select name="review_type" class="w-full border rounded-lg p-2 focus:ring-indigo-500">
+
+                <select id="review_type" name="review_type" class="w-full border rounded-lg p-2 focus:ring-indigo-500">
                     <option value="">Pilih Jenis Review</option>
                     <option value="exempted">Exempted (Auto Approve)</option>
                     <option value="expedited">Expedited Review (min. 3 reviewer)</option>
@@ -139,17 +143,60 @@
                 </select>
             </div>
 
-                        <!-- Alasan Exempted (muncul hanya jika pilih exempted) -->
+            <!-- Alasan Exempted -->
             <div id="exempted_reason_container" class="bg-white rounded-xl shadow-sm p-5 mb-6" style="display: none;">
                 <h2 class="text-xl font-semibold mb-4">Alasan Exempted / Dasar Pertimbangan</h2>
-                <textarea name="exempted_reason" rows="3" class="w-full border rounded-lg p-2" placeholder="Jelaskan alasan penelitian ini exempted dari review penuh..."></textarea>
-                <p class="text-sm text-gray-500 mt-2 italic">Contoh: Penelitian risiko minimal, tidak melibatkan subjek rentan, menggunakan data sekunder anonim, dll.</p>
+
+                <textarea 
+                    name="exempted_reason" 
+                    rows="3" 
+                    class="w-full border rounded-lg p-2" 
+                    placeholder="Jelaskan alasan penelitian ini masuk kategori exempted..."
+                ></textarea>
+
+                <p class="text-sm text-gray-500 mt-2 italic">
+                    Jika memilih Exempted, proposal tidak dikirim ke reviewer dan akan dikembalikan ke admin untuk keputusan lanjutan.
+                </p>
             </div>
 
-            <!-- Catatan Verifikasi -->
-            <div class="bg-white rounded-xl shadow-sm p-5 mb-6">
-                <h2 class="text-xl font-semibold mb-4">Catatan Verifikasi</h2>
-                <textarea name="catatan" rows="3" class="w-full border rounded-lg p-2" placeholder="Tambahkan catatan atau instruksi khusus..."></textarea>
+            <!-- Pilih Reviewer -->
+            <div id="reviewer_container" class="bg-white rounded-xl shadow-sm p-5 mb-6" style="display: none;">
+                <h2 id="reviewer_title" class="text-xl font-semibold mb-4">Pilih Reviewer</h2>
+
+                <div class="mb-4 p-3 rounded-lg bg-yellow-50 border border-yellow-200 text-yellow-800 text-sm">
+                    <strong>Catatan:</strong> Reviewer tidak boleh dipilih double. Setiap pilihan reviewer harus berbeda.
+                </div>
+
+                <div class="mb-4">
+                    <label class="block font-medium mb-1">Deadline Review</label>
+                    <input 
+                        type="date" 
+                        id="review_deadline" 
+                        name="review_deadline" 
+                        value="{{ old('review_deadline') }}"
+                        min="{{ now()->toDateString() }}"
+                        class="w-full border rounded-lg p-2"
+                    >
+                    <p class="text-sm text-gray-500 mt-1 italic">
+                        Deadline ini akan berlaku untuk semua reviewer yang dipilih.
+                    </p>
+
+                    @error('review_deadline')
+                        <p class="text-red-500 text-sm mt-2">{{ $message }}</p>
+                    @enderror
+                </div>
+
+                <div id="reviewer_fields" class="space-y-3"></div>
+
+                <p id="reviewer_info" class="text-sm text-gray-500 mt-2 italic"></p>
+
+                @error('reviewer_ids')
+                    <p class="text-red-500 text-sm mt-2">{{ $message }}</p>
+                @enderror
+
+                @error('reviewer_ids.*')
+                    <p class="text-red-500 text-sm mt-2">Reviewer tidak boleh sama/double.</p>
+                @enderror
             </div>
 
             <!-- Tombol Aksi -->
@@ -166,14 +213,79 @@
 </div>
 
 <script>
-    document.getElementById('review_type').addEventListener('change', function() {
-        var container = document.getElementById('exempted_reason_container');
+document.addEventListener('DOMContentLoaded', function () {
+    const reviewType = document.getElementById('review_type');
+    const exemptedContainer = document.getElementById('exempted_reason_container');
+    const reviewerContainer = document.getElementById('reviewer_container');
+    const reviewerTitle = document.getElementById('reviewer_title');
+    const reviewerFields = document.getElementById('reviewer_fields');
+    const reviewerInfo = document.getElementById('reviewer_info');
+
+    function renderReviewers(total) {
+        reviewerFields.innerHTML = '';
+
+        for (let i = 1; i <= total; i++) {
+            reviewerFields.innerHTML += `
+                <div>
+                    <label class="block font-medium mb-1">Reviewer ${i}</label>
+                    <select name="reviewer_ids[]" class="reviewer-select w-full border rounded-lg p-2">
+                        <option value="">Pilih Reviewer ${i}</option>
+                        @foreach($reviewers ?? [] as $reviewer)
+                            <option value="{{ $reviewer->id }}">{{ $reviewer->name }}</option>
+                        @endforeach
+                    </select>
+                </div>
+            `;
+        }
+
+        const selects = document.querySelectorAll('.reviewer-select');
+
+        function updateReviewerOptions() {
+            const selectedValues = Array.from(selects)
+                .map(select => select.value)
+                .filter(value => value !== '');
+
+            selects.forEach(select => {
+                const currentValue = select.value;
+
+                Array.from(select.options).forEach(option => {
+                    if (option.value === '') return;
+
+                    option.disabled = selectedValues.includes(option.value) && option.value !== currentValue;
+                });
+            });
+        }
+
+        selects.forEach(select => {
+            select.addEventListener('change', updateReviewerOptions);
+        });
+    }
+
+    reviewType.addEventListener('change', function () {
+        exemptedContainer.style.display = 'none';
+        reviewerContainer.style.display = 'none';
+        reviewerFields.innerHTML = '';
+        reviewerInfo.innerText = '';
+
         if (this.value === 'exempted') {
-            container.style.display = 'block';
-        } else {
-            container.style.display = 'none';
+            exemptedContainer.style.display = 'block';
+        }
+
+        if (this.value === 'expedited') {
+            reviewerContainer.style.display = 'block';
+            reviewerTitle.innerText = 'Pilih 3 Reviewer';
+            reviewerInfo.innerText = 'Expedited Review wajib memilih 3 reviewer.';
+            renderReviewers(3);
+        }
+
+        if (this.value === 'full_board') {
+            reviewerContainer.style.display = 'block';
+            reviewerTitle.innerText = 'Pilih 5 Reviewer';
+            reviewerInfo.innerText = 'Full Board Review wajib memilih 5 reviewer.';
+            renderReviewers(5);
         }
     });
+});
 </script>
 </body>
 </html>

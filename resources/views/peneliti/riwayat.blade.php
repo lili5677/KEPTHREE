@@ -18,15 +18,20 @@
             <label class="kep-label" style="font-size:.78rem;margin-bottom:.3rem;">
                 Filter Status
             </label>
-            <select name="status" class="kep-select" style="width:200px;">
+            <select name="status" class="kep-select" style="width:240px;">
                 <option value="">Semua Status</option>
                 @foreach([
-                    'new_proposal'         => 'New Proposal',
-                    'waiting_verification' => 'Waiting Verification',
-                    'under_review'         => 'Under Review',
-                    'revision_required'    => 'Revision Required',
-                    'approved'             => 'Approved',
-                    'rejected'             => 'Rejected',
+                    'new_proposal'                 => 'New Proposal',
+                    'assigned_to_secretary'         => 'Assigned to Secretary',
+                    'waiting_secretary_decision'    => 'Waiting Secretary Decision',
+                    'ready_for_reviewer_assignment' => 'Ready for Reviewer Assignment',
+                    'on_review'                    => 'On Review',
+                    'revision_required'            => 'Revision Required',
+                    'revised'                      => 'Revised',
+                    'approved'                     => 'Approved',
+                    'approved_with_recommendation'  => 'Approved with Recommendation',
+                    'disapproved'                  => 'Disapproved',
+                    'issued'                       => 'Issued',
                 ] as $value => $label)
                     <option value="{{ $value }}"
                         {{ request('status') === $value ? 'selected' : '' }}>
@@ -86,12 +91,35 @@
 
     @php
         $statusMap = [
-            'new_proposal'         => ['class' => 'badge-new',       'label' => 'New Proposal'],
-            'waiting_verification' => ['class' => 'badge-review',    'label' => 'Waiting Verification'],
-            'under_review'         => ['class' => 'badge-review',    'label' => 'Under Review'],
-            'revision_required'    => ['class' => 'badge-revision',  'label' => 'Revision Required'],
-            'approved'             => ['class' => 'badge-approved',  'label' => 'Approved'],
-            'rejected'             => ['class' => 'badge-rejected',  'label' => 'Rejected'],
+            'new_proposal'                 => ['class' => 'badge-new',       'label' => 'New Proposal'],
+            'assigned_to_secretary'         => ['class' => 'badge-review',    'label' => 'Assigned to Secretary'],
+            'waiting_secretary_decision'    => ['class' => 'badge-review',    'label' => 'Waiting Secretary Decision'],
+            'ready_for_reviewer_assignment' => ['class' => 'badge-review',    'label' => 'Ready for Reviewer Assignment'],
+            'on_review'                    => ['class' => 'badge-review',    'label' => 'On Review'],
+            'revision_required'            => ['class' => 'badge-revision',  'label' => 'Revision Required'],
+            'revised'                      => ['class' => 'badge-review',    'label' => 'Revised'],
+            'approved'                     => ['class' => 'badge-approved',  'label' => 'Approved'],
+            'approved_with_recommendation'  => ['class' => 'badge-approved',  'label' => 'Approved with Recommendation'],
+            'disapproved'                  => ['class' => 'badge-rejected',  'label' => 'Disapproved'],
+            'issued'                       => ['class' => 'badge-approved',  'label' => 'Issued'],
+        ];
+
+        $afterSubmittedStatuses = [
+            'assigned_to_secretary',
+            'waiting_secretary_decision',
+            'ready_for_reviewer_assignment',
+            'on_review',
+            'revision_required',
+            'revised',
+            'approved',
+            'approved_with_recommendation',
+            'disapproved',
+            'issued',
+        ];
+
+        $reviewStatuses = [
+            'ready_for_reviewer_assignment',
+            'on_review',
         ];
 
         $badge      = $statusMap[$item->status] ?? ['class' => 'badge-new', 'label' => $item->status];
@@ -110,7 +138,9 @@
                 <span class="kep-badge {{ $badge['class'] }}">{{ $badge['label'] }}</span>
             </div>
 
-            <div class="protocol-title" style="font-size:1.08rem;margin-bottom:.55rem;line-height:1.4;">{{ $item->title }}</div>
+            <div class="protocol-title" style="font-size:1.08rem;margin-bottom:.55rem;line-height:1.4;">
+                {{ $item->title }}
+            </div>
 
             <div class="protocol-sub d-flex gap-2 flex-wrap" style="margin-top:0;">
                 <span>
@@ -124,7 +154,7 @@
                 </span>
             </div>
 
-            {{-- Activity log (collapsible) --}}
+            {{-- Activity log --}}
             @if($item->status !== 'new_proposal')
                 <div style="margin-top:.6rem;">
                     <button type="button"
@@ -153,38 +183,123 @@
                             </div>
                         </div>
 
-                        @if(in_array($item->status, ['waiting_verification','under_review','revision_required','approved','rejected']))
+                        @if(in_array($item->status, $afterSubmittedStatuses))
                             <div class="activity-entry">
                                 <span class="activity-dot dot-done"></span>
-                                <div><div class="activity-text">Sedang diverifikasi sekretariat</div></div>
+                                <div>
+                                    <div class="activity-text">Pengajuan diteruskan ke sekretariat</div>
+                                </div>
                             </div>
                         @endif
 
-                        @if(in_array($item->status, ['under_review','revision_required','approved','rejected']))
+                        @if($item->status === 'assigned_to_secretary')
+                            <div class="activity-entry">
+                                <span class="activity-dot dot-pending"></span>
+                                <div>
+                                    <div class="activity-text">Menunggu verifikasi dokumen oleh sekretariat</div>
+                                </div>
+                            </div>
+                        @endif
+
+                        @if($item->status === 'waiting_secretary_decision')
                             <div class="activity-entry">
                                 <span class="activity-dot dot-done"></span>
-                                <div><div class="activity-text">Sedang dalam proses review</div></div>
+                                <div>
+                                    <div class="activity-text">Dokumen lengkap dan masuk kategori Exempted</div>
+                                </div>
+                            </div>
+                            <div class="activity-entry">
+                                <span class="activity-dot dot-pending"></span>
+                                <div>
+                                    <div class="activity-text">Menunggu keputusan sekretariat</div>
+                                </div>
+                            </div>
+                        @endif
+
+                        @if($item->status === 'ready_for_reviewer_assignment')
+                            <div class="activity-entry">
+                                <span class="activity-dot dot-done"></span>
+                                <div>
+                                    <div class="activity-text">Dokumen lengkap</div>
+                                </div>
+                            </div>
+                            <div class="activity-entry">
+                                <span class="activity-dot dot-pending"></span>
+                                <div>
+                                    <div class="activity-text">Menunggu penugasan reviewer</div>
+                                </div>
+                            </div>
+                        @endif
+
+                        @if(in_array($item->status, $reviewStatuses))
+                            <div class="activity-entry">
+                                <span class="activity-dot dot-done"></span>
+                                <div>
+                                    <div class="activity-text">Pengajuan masuk tahap review</div>
+                                </div>
+                            </div>
+                        @endif
+
+                        @if($item->status === 'on_review')
+                            <div class="activity-entry">
+                                <span class="activity-dot dot-pending"></span>
+                                <div>
+                                    <div class="activity-text">Sedang direview oleh reviewer</div>
+                                </div>
                             </div>
                         @endif
 
                         @if($item->status === 'revision_required')
                             <div class="activity-entry">
                                 <span class="activity-dot dot-revision"></span>
-                                <div><div class="activity-text" style="color:#9a3412;">Revisi diperlukan</div></div>
+                                <div>
+                                    <div class="activity-text" style="color:#9a3412;">Revisi diperlukan</div>
+                                </div>
                             </div>
                         @endif
 
-                        @if($item->status === 'approved')
+                        @if($item->status === 'revised')
+                            <div class="activity-entry">
+                                <span class="activity-dot dot-done"></span>
+                                <div>
+                                    <div class="activity-text">Revisi telah dikirim</div>
+                                </div>
+                            </div>
+                        @endif
+
+                        @if(in_array($item->status, ['approved', 'approved_with_recommendation', 'issued']))
                             <div class="activity-entry">
                                 <span class="activity-dot dot-approved"></span>
-                                <div><div class="activity-text" style="color:#065f46;">Disetujui</div></div>
+                                <div>
+                                    <div class="activity-text" style="color:#065f46;">Pengajuan disetujui</div>
+                                </div>
                             </div>
                         @endif
 
-                        @if($item->status === 'rejected')
+                        @if(in_array($item->status, ['approved', 'approved_with_recommendation']))
+                            <div class="activity-entry">
+                                <span class="activity-dot dot-pending"></span>
+                                <div>
+                                    <div class="activity-text">SKE sedang dibuat</div>
+                                </div>
+                            </div>
+                        @endif
+
+                        @if($item->status === 'issued')
+                            <div class="activity-entry">
+                                <span class="activity-dot dot-approved"></span>
+                                <div>
+                                    <div class="activity-text" style="color:#065f46;">Surat kelaikan etik telah diterbitkan</div>
+                                </div>
+                            </div>
+                        @endif
+
+                        @if($item->status === 'disapproved')
                             <div class="activity-entry">
                                 <span class="activity-dot dot-rejected"></span>
-                                <div><div class="activity-text" style="color:#991b1b;">Ditolak</div></div>
+                                <div>
+                                    <div class="activity-text" style="color:#991b1b;">Pengajuan tidak disetujui</div>
+                                </div>
                             </div>
                         @endif
 
@@ -197,13 +312,11 @@
         {{-- ── Kanan: aksi ─────────────────────────────────────── --}}
         <div class="d-flex gap-1 align-center" style="flex-shrink:0;">
 
-            {{-- Lihat Detail → ke halaman detail --}}
             <a href="{{ route('peneliti.riwayat.show', $item->id) }}" class="btn-detail">
                 <i class="bi bi-eye" style="font-size:.8rem;"></i>
                 Lihat Detail
             </a>
 
-            {{-- Upload Revisi (hanya jika revision_required) --}}
             @if($item->status === 'revision_required')
                 <a href="#"
                    class="btn-kep btn-primary"
@@ -214,7 +327,6 @@
                 </a>
             @endif
 
-            {{-- Download Dokumen --}}
             @if($hasDocumen)
                 <div class="dropdown-wrap" style="position:relative;">
                     <button type="button"
@@ -270,6 +382,7 @@
         @endif
     </div>
 @endforelse
+
 </div>
 
 {{-- ══ PAGINATION ══════════════════════════════════════════════════ --}}

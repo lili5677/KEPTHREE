@@ -49,6 +49,12 @@ class Protocol extends Model
                     ->whereIn('type', ['formulir_pengajuan', 'formulir_ringkasan']);
     }
 
+    // Relasi ke tabel reviews (untuk assign reviewer)
+    public function reviews()
+    {
+        return $this->hasMany(Review::class);
+    }
+
     // ── Helper ──────────────────────────────────────────
 
     /**
