@@ -13,7 +13,7 @@ class Protocol extends Model
 
     protected $fillable = [
         'user_id',
-        'sekretaris_id',
+        'sekretariat_id',
         'ketua_penandatangan_id',
         'title',
         'program_studi',

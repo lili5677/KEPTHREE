@@ -497,13 +497,87 @@
     @if($protocols->isEmpty())
 
         {{-- ================================================
-             EMPTY STATE
+             EMPTY STATE — LAYOUT 2 KOLOM (sama seperti saat ada data)
              ================================================ --}}
-        <div class="as-empty-page">
-            <svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1">
-                <path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
-            </svg>
-            <p>Tidak ada proposal baru yang menunggu assignment.</p>
+        <div class="as-layout">
+
+            {{-- KOLOM KIRI --}}
+            <div class="as-left">
+
+                {{-- Kartu 1: Proposal Baru --}}
+                <div class="as-card">
+                    <div class="as-card-header">
+                        <div>
+                            <p class="as-card-title">Proposal Baru</p>
+                            <p class="as-card-desc">0 proposal menunggu</p>
+                        </div>
+                    </div>
+                    <div class="as-empty">
+                        <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1">
+                            <path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                        </svg>
+                        <p>Tidak ada proposal baru yang menunggu assignment.</p>
+                    </div>
+                </div>
+
+                {{-- Kartu 2: Beban Kerja Sekretaris (dynamic, tampil meski proposal kosong) --}}
+                <div class="as-card">
+                    <div class="as-card-header">
+                        <div>
+                            <p class="as-card-title">Beban Kerja Sekretaris</p>
+                            <p class="as-card-desc">Distribusi tugas sekretaris</p>
+                        </div>
+                    </div>
+                    <div class="as-workload-body">
+                        @php $maxLoad = $sekretarisList->max('workload') ?: 1; @endphp
+                        @forelse($sekretarisList as $sek)
+                            @php
+                                $pct = round(($sek->workload / $maxLoad) * 100);
+                                $cls = $pct >= 80 ? 'as-wl-high' : ($pct >= 50 ? 'as-wl-mid' : 'as-wl-low');
+                            @endphp
+                            <div>
+                                <div class="as-wl-top">
+                                    <span class="as-wl-name">{{ $sek->name }}</span>
+                                    <span class="as-wl-count">{{ $sek->workload }}</span>
+                                </div>
+                                <div class="as-wl-track">
+                                    <div class="as-wl-fill {{ $cls }}" style="width:{{ max($pct, 4) }}%"></div>
+                                </div>
+                            </div>
+                        @empty
+                            <div class="as-empty">
+                                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1">
+                                    <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+                                    <circle cx="9" cy="7" r="4"/>
+                                </svg>
+                                <p>Belum ada sekretaris terdaftar.</p>
+                            </div>
+                        @endforelse
+                    </div>
+                </div>
+
+            </div>
+            {{-- end kolom kiri --}}
+
+            {{-- KOLOM KANAN --}}
+            <div class="as-right">
+                <div class="as-card">
+                    <div class="as-card-header">
+                        <div>
+                            <p class="as-card-title">Detail Proposal & Assign Sekretaris</p>
+                            <p class="as-card-desc">Pilih proposal untuk melihat detail dan melakukan assignment</p>
+                        </div>
+                    </div>
+                    <div class="as-empty" style="padding: 64px 20px;">
+                        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1">
+                            <path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                        </svg>
+                        <p>Tidak ada proposal yang perlu diassign saat ini.</p>
+                    </div>
+                </div>
+            </div>
+            {{-- end kolom kanan --}}
+
         </div>
 
     @else
@@ -582,7 +656,6 @@
 
         </div>
         {{-- end kolom kiri --}}
-
 
         {{-- ============================================
              KOLOM KANAN
