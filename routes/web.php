@@ -10,6 +10,7 @@ use App\Http\Controllers\Peneliti\RiwayatController;
 use App\Http\Controllers\Sekretariat\DashboardController;
 use App\Http\Controllers\Sekretariat\VerifikasiController;
 use App\Http\Controllers\Peneliti\TemplateController as PenelitiTemplateController;
+use App\Http\Controllers\Reviewer\ReviewController;
 
 Route::get('/register', [AuthController::class, 'showRegister'])->name('register');
 Route::post('/register', [AuthController::class, 'register']);
@@ -27,7 +28,6 @@ Route::middleware('auth')->group(function () {
     Route::get('/peneliti/dashboard', fn() => view('dashboard.peneliti'))->name('peneliti.dashboard.view');
     Route::get('/sekretariat/dashboard', [DashboardController::class, 'index'])->name('sekretariat.dashboard');
     Route::get('/verifikasi/download/{document}', [VerifikasiController::class, 'download'])->name('verifikasi.download');
-    Route::get('/reviewer/dashboard', fn() => view('dashboard.reviewer'))->name('reviewer.dashboard');
     Route::get('/ketua/dashboard', fn() => view('dashboard.ketua'))->name('ketua.dashboard');
 
 });
@@ -156,3 +156,36 @@ Route::middleware(['auth', 'peneliti'])->prefix('peneliti')->name('peneliti.')->
         ->name('template.download');
 
 });
+
+// =====================================================================
+// REVIEWER
+// =====================================================================
+Route::middleware(['auth', 'reviewer'])
+    ->prefix('reviewer')
+    ->name('reviewer.')
+    ->group(function () {
+
+        Route::get('/dashboard', [ReviewController::class, 'dashboard'])
+            ->name('dashboard');
+
+        Route::get('/tugas-review', [ReviewController::class, 'index'])
+            ->name('tugas.index');
+
+        Route::get('/tugas-review/{assignment}', [ReviewController::class, 'show'])
+            ->name('tugas.show');
+
+        Route::post('/tugas-review/{assignment}/submit', [ReviewController::class, 'submit'])
+            ->name('tugas.submit');
+
+        Route::get('/riwayat-review', [ReviewController::class, 'history'])
+            ->name('riwayat');
+
+        Route::get('/dokumen/{document}/preview', [ReviewController::class, 'previewDocument'])
+            ->name('dokumen.preview');
+
+        Route::get('/riwayat-review/{assignment}/edit', [ReviewController::class, 'editHistory'])
+            ->name('riwayat.edit');
+
+        Route::put('/riwayat-review/{assignment}', [ReviewController::class, 'updateHistory'])
+            ->name('riwayat.update');
+    });
