@@ -62,6 +62,30 @@ Route::middleware(['auth'])
 
     });
 
+    // =====================================================================
+// SEKRETARIAT PB-10 (Verifikasi)
+// =====================================================================
+
+Route::middleware(['auth'])
+    ->prefix('sekretariat')
+    ->name('sekretariat.')
+    ->group(function () {
+
+        // ... route verifikasi yang sudah ada ...
+
+        // =====================================================================
+        // SEKRETARIAT PB-14 (Secretary Decision)
+        // =====================================================================
+        Route::get('/decision', [App\Http\Controllers\Sekretariat\DecisionController::class, 'index'])
+            ->name('decision.index');
+
+        Route::get('/decision/{protocol}', [App\Http\Controllers\Sekretariat\DecisionController::class, 'show'])
+            ->name('decision.show');
+
+        Route::post('/decision/{protocol}', [App\Http\Controllers\Sekretariat\DecisionController::class, 'store'])
+            ->name('decision.store');
+    });
+
 
 // =====================================================================
 // ADMIN 
