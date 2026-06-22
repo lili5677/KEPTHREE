@@ -81,4 +81,13 @@ class Protocol extends Model
             default                 => 'bg-secondary',
         };
     }
+
+    public function verification()
+    {
+        return $this->hasOne(\App\Models\Verification::class, 'protocol_id');
+    }
+    public function sekretariatDecision()
+    {
+        return $this->hasOne(\App\Models\SekretariatDecision::class, 'protocol_id');
+    }
 }
