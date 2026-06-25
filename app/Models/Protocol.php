@@ -2,15 +2,13 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class Protocol extends Model
 {
-    use HasFactory;
-
-    protected $table = 'protocols';
-
     protected $fillable = [
         'user_id',
         'sekretariat_id',
@@ -27,52 +25,87 @@ class Protocol extends Model
     ];
 
     protected $casts = [
-        'is_confirmed_peneliti' => 'boolean',
         'submitted_at'          => 'datetime',
+        'is_confirmed_peneliti' => 'boolean',
     ];
 
-    // ── Relasi ──────────────────────────────────────────
+    // ─── Relasi ────────────────────────────────────────────────────
 
-    public function user()
+    /** Peneliti pemilik protokol */
+    public function user(): BelongsTo
     {
-        return $this->belongsTo(User::class);
+        return $this->belongsTo(User::class, 'user_id');
     }
 
-    public function documents()
+    /** Sekretariat yang di-assign */
+    public function sekretariat(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'sekretariat_id');
+    }
+
+    /** Ketua penandatangan */
+    public function ketuaPenandatangan(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'ketua_penandatangan_id');
+    }
+
+    /** Dokumen-dokumen yang diunggah peneliti */
+    public function documents(): HasMany
     {
         return $this->hasMany(Document::class);
     }
 
-    public function dokumenWajib()
+    /** Verifikasi oleh sekretariat */
+    public function verifications(): HasMany
     {
-        return $this->hasMany(Document::class)
-                    ->whereIn('type', ['formulir_pengajuan', 'formulir_ringkasan']);
+        return $this->hasMany(Verification::class);
     }
 
-    // ── Helper ──────────────────────────────────────────
-
-    /**
-     * Generate nomor registrasi unik: PRO-001, PRO-002, ...
-     */
-    public static function generateNomorRegistrasi(): string
+    /** SKE yang terkait protokol ini (1 protokol = 1 SKE) */
+    public function skeDocument(): HasOne
     {
-        $count = self::count() + 1;
-        return 'PRO-' . str_pad($count, 3, '0', STR_PAD_LEFT);
+        return $this->hasOne(SkeDocument::class);
     }
 
-    /**
-     * Class badge Bootstrap sesuai status
-     */
-    public function getStatusBadgeClassAttribute(): string
+    // ─── Helper status ──────────────────────────────────────────────
+
+    public function statusLabel(): string
     {
-        return match($this->status) {
-            'new_proposal'          => 'bg-secondary',
-            'waiting_verification'  => 'bg-info text-dark',
-            'under_review'          => 'bg-warning text-dark',
-            'revision_required'     => 'bg-danger',
-            'approved'              => 'bg-success',
-            'rejected'              => 'bg-dark',
-            default                 => 'bg-secondary',
+        return match ($this->status) {
+            'new_proposal'         => 'New Proposal',
+            'waiting_verification' => 'Waiting Verification',
+            'under_review'         => 'Under Review',
+            'revision_required'    => 'Revision Required',
+            'approved'             => 'Approved',
+            'rejected'             => 'Rejected',
+            default                => ucfirst($this->status),
         };
+    }
+
+    public function statusColor(): string
+    {
+        return match ($this->status) {
+            'new_proposal'         => 'amber',
+            'waiting_verification' => 'blue',
+            'under_review'         => 'indigo',
+            'revision_required'    => 'orange',
+            'approved'             => 'green',
+            'rejected'             => 'red',
+            default                => 'slate',
+        };
+    }
+
+    // ─── Helper tanggal (dipakai SkeGeneratorService) ───────────────
+
+    /** Tanggal mulai penelitian (diambil dari submitted_at) */
+    public function tanggalMulai()
+    {
+        return $this->submitted_at ?? $this->created_at;
+    }
+
+    /** Tanggal selesai penelitian (submitted_at + durasi_penelitian bulan) */
+    public function tanggalSelesai()
+    {
+        return $this->tanggalMulai()?->copy()->addMonths($this->durasi_penelitian);
     }
 }
