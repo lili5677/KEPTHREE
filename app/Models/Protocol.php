@@ -67,6 +67,40 @@ class Protocol extends Model
         return $this->hasOne(SkeDocument::class);
     }
 
+    /** Relasi ke reviewer */
+    public function reviews(): HasMany
+    {
+        return $this->hasMany(Review::class);
+    }
+
+    /** Verifikasi tunggal */
+    public function verification(): HasOne
+    {
+        return $this->hasOne(Verification::class, 'protocol_id');
+    }
+
+    /** Keputusan sekretariat */
+    public function sekretariatDecision(): HasOne
+    {
+        return $this->hasOne(SekretariatDecision::class, 'protocol_id');
+    }
+
+    // ─── Helper ──────────────────────────────────────────
+
+    /**
+     * Generate nomor registrasi unik: PRO-001, PRO-002, ...
+     */
+    public static function generateNomorRegistrasi(): string
+    {
+        $last = self::orderBy('id', 'desc')->first();
+
+        $number = $last && $last->nomor_registrasi
+            ? ((int) substr($last->nomor_registrasi, 4)) + 1
+            : 1;
+
+        return 'PRO-' . str_pad($number, 3, '0', STR_PAD_LEFT);
+    }
+
     // ─── Helper status ──────────────────────────────────────────────
 
     public function statusLabel(): string
@@ -95,15 +129,15 @@ class Protocol extends Model
         };
     }
 
-    // ─── Helper tanggal (dipakai SkeGeneratorService) ───────────────
+    // ─── Helper tanggal ─────────────────────────────────────────────
 
-    /** Tanggal mulai penelitian (diambil dari submitted_at) */
+    /** Tanggal mulai penelitian */
     public function tanggalMulai()
     {
         return $this->submitted_at ?? $this->created_at;
     }
 
-    /** Tanggal selesai penelitian (submitted_at + durasi_penelitian bulan) */
+    /** Tanggal selesai penelitian */
     public function tanggalSelesai()
     {
         return $this->tanggalMulai()?->copy()->addMonths($this->durasi_penelitian);

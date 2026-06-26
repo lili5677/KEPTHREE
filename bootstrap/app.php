@@ -14,7 +14,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->alias([
             'peneliti' => \App\Http\Middleware\CheckRolePeneliti::class,
             'admin'    => \App\Http\Middleware\CheckRoleAdmin::class,
-          
+            'reviewer' => \App\Http\Middleware\CheckRoleReviewer::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {

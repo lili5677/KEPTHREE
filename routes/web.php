@@ -9,8 +9,17 @@ use App\Http\Controllers\Admin\AssignSekretarisController;
 use App\Http\Controllers\Admin\DokumenController;
 use App\Http\Controllers\Admin\EthicalClearanceController;
 use App\Http\Controllers\Peneliti\RiwayatController;
+use App\Http\Controllers\Sekretariat\DashboardController;
+use App\Http\Controllers\Sekretariat\VerifikasiController;
+use App\Http\Controllers\Sekretariat\DecisionController;
 use App\Http\Controllers\Peneliti\TemplateController as PenelitiTemplateController;
+use App\Http\Controllers\Reviewer\ReviewController;
 
+/*
+|--------------------------------------------------------------------------
+| AUTH
+|--------------------------------------------------------------------------
+*/
 Route::get('/register', [AuthController::class, 'showRegister'])->name('register');
 Route::post('/register', [AuthController::class, 'register']);
 
@@ -18,88 +27,122 @@ Route::get('/login', [AuthController::class, 'showLogin'])->name('login');
 Route::post('/login', [AuthController::class, 'login']);
 Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 
-// =====================================================================
-// ADMIN — dilindungi auth + role admin
-// =====================================================================
-Route::middleware(['auth', 'admin'])->group(function () {
 
-    // ===== DASHBOARD =====
-    Route::get('/admin/dashboard', fn() => view('dashboard.admin'))->name('admin.dashboard');
+/*
+|--------------------------------------------------------------------------
+| ADMIN
+|--------------------------------------------------------------------------
+*/
+Route::middleware(['auth', 'admin'])
+->prefix('admin')
+->name('admin.')
+->group(function () {
 
-    // ===== USER MANAGEMENT =====
-    Route::get('/admin/users',                     [UserManagementController::class, 'index'])     ->name('admin.users.index');
-    Route::get('/admin/users/create',              [UserManagementController::class, 'create'])    ->name('admin.users.create');
-    Route::post('/admin/users',                    [UserManagementController::class, 'store'])     ->name('admin.users.store');
-    Route::put('/admin/users/{user}',              [UserManagementController::class, 'update'])    ->name('admin.users.update');
-    Route::patch('/admin/users/{user}/deactivate', [UserManagementController::class, 'deactivate'])->name('admin.users.deactivate');
-    Route::patch('/admin/users/{user}/activate',   [UserManagementController::class, 'activate'])  ->name('admin.users.activate');
+    Route::get('/dashboard', fn() => view('dashboard.admin'))->name('dashboard');
 
-    // ===== TEMPLATE =====
-    Route::get('/admin/template',                     [TemplateController::class, 'index'])   ->name('admin.template.index');
-    Route::post('/admin/template',                    [TemplateController::class, 'store'])   ->name('admin.template.store');
-    Route::get('/admin/template/{template}/edit',     [TemplateController::class, 'edit'])    ->name('admin.template.edit');
-    Route::put('/admin/template/{template}',          [TemplateController::class, 'update'])  ->name('admin.template.update');
-    Route::delete('/admin/template/{template}',       [TemplateController::class, 'destroy']) ->name('admin.template.destroy');
-    Route::get('/admin/template/{template}/download', [TemplateController::class, 'download'])->name('admin.template.download');
+    // USER
+    Route::resource('users', UserManagementController::class)->except(['show', 'destroy']);
+    Route::patch('/users/{user}/deactivate', [UserManagementController::class, 'deactivate'])->name('users.deactivate');
+    Route::patch('/users/{user}/activate', [UserManagementController::class, 'activate'])->name('users.activate');
 
-    // ===== ASSIGN SEKRETARIS =====
-    Route::get('/admin/sekretaris',                    [AssignSekretarisController::class, 'index']) ->name('admin.sekretaris.index');
-    Route::post('/admin/sekretaris/{protocol}/assign', [AssignSekretarisController::class, 'assign'])->name('admin.sekretaris.assign');
+    // TEMPLATE
+    Route::resource('template', TemplateController::class);
+    Route::get('/template/{template}/download', [TemplateController::class, 'download'])->name('template.download');
 
-    // ===== SEMUA DOKUMEN =====
-    Route::get('/admin/dokumen',                     [DokumenController::class, 'index'])   ->name('admin.dokumen.index');
-    Route::get('/admin/dokumen/{protocol}',          [DokumenController::class, 'show'])    ->name('admin.dokumen.show');
-    Route::get('/admin/dokumen/{protocol}/download', [DokumenController::class, 'download'])->name('admin.dokumen.download');
+    // SEKRETARIS
+    Route::get('/sekretaris', [AssignSekretarisController::class, 'index'])->name('sekretaris.index');
+    Route::post('/sekretaris/{protocol}/assign', [AssignSekretarisController::class, 'assign'])->name('sekretaris.assign');
 
-    // ===== ETHICAL CLEARANCE =====
-    Route::get('/admin/ethical-clearance',                                  [EthicalClearanceController::class, 'index'])          ->name('admin.ethical-clearance.index');
-    Route::post('/admin/ethical-clearance/{protocol}/terbitkan',            [EthicalClearanceController::class, 'terbitkanSke'])   ->name('admin.ethical-clearance.terbitkan');
-    Route::post('/admin/ethical-clearance/ske/{ske}/kirim-ketua',           [EthicalClearanceController::class, 'kirimKeKetua'])   ->name('admin.ethical-clearance.kirim-ketua');
-    Route::post('/admin/ethical-clearance/ske/{ske}/proses-revisi',         [EthicalClearanceController::class, 'prosesRevisi'])   ->name('admin.ethical-clearance.proses-revisi');
-    Route::post('/admin/ethical-clearance/ske/{ske}/publish',               [EthicalClearanceController::class, 'publish'])        ->name('admin.ethical-clearance.publish');
-    Route::get('/admin/ethical-clearance/ske/{ske}/download',               [EthicalClearanceController::class, 'downloadSke'])    ->name('admin.ethical-clearance.download');
-    Route::get('/admin/ethical-clearance/ske/{ske}/preview',                [EthicalClearanceController::class, 'previewSke'])     ->name('admin.ethical-clearance.preview');
-    Route::post('/admin/ethical-clearance/save-setting',                    [EthicalClearanceController::class, 'saveSettingForm'])->name('admin.ethical-clearance.save-setting');
+    // DOKUMEN
+    Route::get('/dokumen', [DokumenController::class, 'index'])->name('dokumen.index');
+    Route::get('/dokumen/{protocol}', [DokumenController::class, 'show'])->name('dokumen.show');
+    Route::get('/dokumen/{protocol}/download', [DokumenController::class, 'download'])->name('dokumen.download');
 
-    // ===== PLACEHOLDER =====
-    Route::get('/admin/log', fn() => abort(404))->name('admin.log.index');
+    // ETHICAL CLEARANCE
+    Route::prefix('ethical-clearance')->name('ethical-clearance.')->group(function () {
+        Route::get('/', [EthicalClearanceController::class, 'index'])->name('index');
+        Route::post('{protocol}/terbitkan', [EthicalClearanceController::class, 'terbitkanSke'])->name('terbitkan');
+        Route::post('ske/{ske}/kirim-ketua', [EthicalClearanceController::class, 'kirimKeKetua'])->name('kirim-ketua');
+        Route::post('ske/{ske}/proses-revisi', [EthicalClearanceController::class, 'prosesRevisi'])->name('proses-revisi');
+        Route::post('ske/{ske}/publish', [EthicalClearanceController::class, 'publish'])->name('publish');
+        Route::get('ske/{ske}/download', [EthicalClearanceController::class, 'downloadSke'])->name('download');
+        Route::get('ske/{ske}/preview', [EthicalClearanceController::class, 'previewSke'])->name('preview');
+        Route::post('save-setting', [EthicalClearanceController::class, 'saveSettingForm'])->name('save-setting');
+    });
 
 });
 
-// =====================================================================
-// DASHBOARD LAIN — hanya butuh auth biasa
-// =====================================================================
-Route::middleware('auth')->group(function () {
-    Route::get('/peneliti/dashboard',    fn() => view('dashboard.peneliti'));
-    Route::get('/sekretariat/dashboard', fn() => view('dashboard.sekretariat'));
-    Route::get('/reviewer/dashboard',    fn() => view('dashboard.reviewer'));
-    Route::get('/ketua/dashboard',       fn() => view('dashboard.ketua'));
+
+/*
+|--------------------------------------------------------------------------
+| SEKRETARIAT
+|--------------------------------------------------------------------------
+*/
+Route::middleware(['auth'])
+->prefix('sekretariat')
+->name('sekretariat.')
+->group(function () {
+
+    Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+
+    // VERIFIKASI
+    Route::get('/verifikasi', [VerifikasiController::class, 'index'])->name('verifikasi.index');
+    Route::get('/verifikasi/{protocol}', [VerifikasiController::class, 'show'])->name('verifikasi.show');
+    Route::post('/verifikasi/{protocol}/check', [VerifikasiController::class, 'check'])->name('verifikasi.check');
+    Route::get('/verifikasi/download/{document}', [VerifikasiController::class, 'download'])->name('verifikasi.download');
+
+    // DECISION
+    Route::get('/decision', [DecisionController::class, 'index'])->name('decision.index');
+    Route::get('/decision/{protocol}', [DecisionController::class, 'show'])->name('decision.show');
+    Route::post('/decision/{protocol}', [DecisionController::class, 'store'])->name('decision.store');
+
 });
 
-// =====================================================================
-// PENELITI — dilindungi auth + role peneliti
-// =====================================================================
-Route::middleware(['auth', 'peneliti'])->prefix('peneliti')->name('peneliti.')->group(function () {
+
+/*
+|--------------------------------------------------------------------------
+| PENELITI
+|--------------------------------------------------------------------------
+*/
+Route::middleware(['auth', 'peneliti'])
+->prefix('peneliti')
+->name('peneliti.')
+->group(function () {
 
     Route::get('/dashboard', [PengajuanController::class, 'dashboard'])->name('dashboard');
 
-    Route::get ('/pengajuan/baru',           [PengajuanController::class, 'create'])     ->name('pengajuan.create');
-    Route::post('/pengajuan/step1',          [PengajuanController::class, 'storeStep1']) ->name('pengajuan.step1');
-    Route::get ('/pengajuan/step2',          [PengajuanController::class, 'step2'])      ->name('pengajuan.step2');
-    Route::post('/pengajuan/step2',          [PengajuanController::class, 'storeStep2']) ->name('pengajuan.step2.store');
-    Route::get ('/pengajuan/step3',          [PengajuanController::class, 'step3'])      ->name('pengajuan.step3');
-    Route::post('/pengajuan/submit',         [PengajuanController::class, 'submit'])     ->name('pengajuan.submit');
+    Route::get('/pengajuan/baru', [PengajuanController::class, 'create'])->name('pengajuan.create');
+    Route::post('/pengajuan/step1', [PengajuanController::class, 'storeStep1'])->name('pengajuan.step1');
+    Route::get('/pengajuan/step2', [PengajuanController::class, 'step2'])->name('pengajuan.step2');
+    Route::post('/pengajuan/step2', [PengajuanController::class, 'storeStep2'])->name('pengajuan.step2.store');
+    Route::get('/pengajuan/step3', [PengajuanController::class, 'step3'])->name('pengajuan.step3');
+    Route::post('/pengajuan/submit', [PengajuanController::class, 'submit'])->name('pengajuan.submit');
 
-    Route::get('/pengajuan/preview/{index}', [PengajuanController::class, 'previewDoc'])->name('pengajuan.preview')
-         ->where('index', '[0-9]+');
+    Route::get('/riwayat', [RiwayatController::class, 'index'])->name('riwayat');
+    Route::get('/riwayat/{protocol}', [RiwayatController::class, 'show'])->name('riwayat.show');
 
-    Route::post('/pengajuan/step2/auto-save', [PengajuanController::class, 'autoSaveStep2'])->name('pengajuan.step2.auto-save');
+    Route::get('/template', [PenelitiTemplateController::class, 'index'])->name('template');
+    Route::get('/template/{template}/download', [PenelitiTemplateController::class, 'download'])->name('template.download');
 
-    Route::get('/riwayat',                             [RiwayatController::class, 'index'])         ->name('riwayat');
-    Route::get('/riwayat/{protocol}',                  [RiwayatController::class, 'show'])          ->name('riwayat.show');
-    Route::get('/riwayat/dokumen/{document}/download', [RiwayatController::class, 'downloadDokumen'])->name('riwayat.download');
+});
 
-    Route::get('/template',                    [PenelitiTemplateController::class, 'index'])   ->name('template');
-    Route::get('/template/{template}/download',[PenelitiTemplateController::class, 'download'])->name('template.download');
+
+/*
+|--------------------------------------------------------------------------
+| REVIEWER
+|--------------------------------------------------------------------------
+*/
+Route::middleware(['auth', 'reviewer'])
+->prefix('reviewer')
+->name('reviewer.')
+->group(function () {
+
+    Route::get('/dashboard', [ReviewController::class, 'dashboard'])->name('dashboard');
+
+    Route::get('/tugas-review', [ReviewController::class, 'index'])->name('tugas.index');
+    Route::get('/tugas-review/{assignment}', [ReviewController::class, 'show'])->name('tugas.show');
+    Route::post('/tugas-review/{assignment}/submit', [ReviewController::class, 'submit'])->name('tugas.submit');
+
+    Route::get('/riwayat-review', [ReviewController::class, 'history'])->name('riwayat');
 
 });

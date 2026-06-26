@@ -70,7 +70,7 @@ class AssignSekretarisController extends Controller
             // Update protocol: set sekretaris & ubah status
             $protocol->update([
                 'sekretariat_id' => $sekretaris->id,
-                'status'        => 'waiting_verification',
+                'status'        => 'assigned_to_secretary',
             ]);
 
             // Keluarkan ?? ke variabel dulu agar valid di dalam string

@@ -5,17 +5,41 @@
 
 @php
     $statusMap = [
-        'new_proposal'         => ['class' => 'badge-new',      'label' => 'New Proposal'],
-        'waiting_verification' => ['class' => 'badge-review',   'label' => 'Waiting Verification'],
-        'under_review'         => ['class' => 'badge-review',   'label' => 'Under Review'],
-        'revision_required'    => ['class' => 'badge-revision', 'label' => 'Revision Required'],
-        'approved'             => ['class' => 'badge-approved', 'label' => 'Approved'],
-        'rejected'             => ['class' => 'badge-rejected', 'label' => 'Rejected'],
+        'new_proposal'                 => ['class' => 'badge-new',      'label' => 'New Proposal'],
+        'assigned_to_secretary'         => ['class' => 'badge-review',   'label' => 'Assigned to Secretary'],
+        'waiting_secretary_decision'    => ['class' => 'badge-review',   'label' => 'Waiting Secretary Decision'],
+        'ready_for_reviewer_assignment' => ['class' => 'badge-review',   'label' => 'Ready for Reviewer Assignment'],
+        'on_review'                    => ['class' => 'badge-review',   'label' => 'On Review'],
+        'revision_required'            => ['class' => 'badge-revision', 'label' => 'Revision Required'],
+        'revised'                      => ['class' => 'badge-review',   'label' => 'Revised'],
+        'approved'                     => ['class' => 'badge-approved', 'label' => 'Approved'],
+        'approved_with_recommendation'  => ['class' => 'badge-approved', 'label' => 'Approved with Recommendation'],
+        'disapproved'                  => ['class' => 'badge-rejected', 'label' => 'Disapproved'],
+        'issued'                       => ['class' => 'badge-approved', 'label' => 'Issued'],
     ];
+
     $badge   = $statusMap[$protocol->status] ?? ['class' => 'badge-new', 'label' => $protocol->status];
     $tanggal = $protocol->submitted_at?->translatedFormat('d M Y, H:i')
                ?? $protocol->created_at->translatedFormat('d M Y, H:i');
-@endphp
+
+    $afterSubmittedStatuses = [
+        'assigned_to_secretary',
+        'waiting_secretary_decision',
+        'ready_for_reviewer_assignment',
+        'on_review',
+        'revision_required',
+        'revised',
+        'approved',
+        'approved_with_recommendation',
+        'disapproved',
+        'issued',
+    ];
+
+    $reviewStatuses = [
+        'ready_for_reviewer_assignment',
+        'on_review',
+    ];
+    @endphp
 
 {{-- ══ PAGE HEADER ══════════════════════════════════════════════════ --}}
 <div class="page-header" style="display:flex;align-items:flex-start;
@@ -172,30 +196,154 @@
             </div>
         </div>
 
-        {{-- Activity Log — space placeholder ──────────────────────── --}}
+        {{-- Activity Log --}}
         <div class="kep-card">
             <div class="kep-card-title">
                 <i class="bi bi-clock-history"></i> Activity Log
             </div>
 
-            {{-- 
-                ╔══════════════════════════════════════════════════════╗
-                ║  PLACEHOLDER — Activity Log akan diisi di iterasi   ║
-                ║  berikutnya setelah tabel activity_logs tersedia.    ║
-                ╚══════════════════════════════════════════════════════╝
-            --}}
-            <div class="activity-placeholder">
-                <div class="activity-placeholder-icon">
-                    <i class="bi bi-hourglass-split"></i>
-                </div>
-                <p class="activity-placeholder-text">
-                    Riwayat aktivitas akan ditampilkan di sini.
-                </p>
-                <p class="activity-placeholder-sub">
-                    Fitur ini sedang dalam pengembangan.
-                </p>
-            </div>
+            <div class="activity-list">
 
+                <div class="activity-entry">
+                    <span class="activity-dot dot-done"></span>
+                    <div>
+                        <div class="activity-text">Pengajuan diterima</div>
+                        <div class="activity-time">
+                            {{ $protocol->submitted_at?->translatedFormat('d M Y, H:i') ?? $protocol->created_at->translatedFormat('d M Y, H:i') }} WIB
+                        </div>
+                    </div>
+                </div>
+
+                @if(in_array($protocol->status, $afterSubmittedStatuses))
+                    <div class="activity-entry">
+                        <span class="activity-dot dot-done"></span>
+                        <div>
+                            <div class="activity-text">Pengajuan diteruskan ke sekretariat</div>
+                        </div>
+                    </div>
+                @endif
+
+                @if($protocol->status === 'assigned_to_secretary')
+                    <div class="activity-entry">
+                        <span class="activity-dot dot-pending"></span>
+                        <div>
+                            <div class="activity-text">Menunggu verifikasi dokumen oleh sekretariat</div>
+                        </div>
+                    </div>
+                @endif
+
+                @if($protocol->status === 'waiting_secretary_decision')
+                    <div class="activity-entry">
+                        <span class="activity-dot dot-done"></span>
+                        <div>
+                            <div class="activity-text">Dokumen lengkap dan masuk kategori Exempted</div>
+                        </div>
+                    </div>
+                    <div class="activity-entry">
+                        <span class="activity-dot dot-pending"></span>
+                        <div>
+                            <div class="activity-text">Menunggu keputusan sekretariat</div>
+                        </div>
+                    </div>
+                @endif
+
+                @if($protocol->status === 'ready_for_reviewer_assignment')
+                    <div class="activity-entry">
+                        <span class="activity-dot dot-done"></span>
+                        <div>
+                            <div class="activity-text">Dokumen lengkap</div>
+                        </div>
+                    </div>
+                    <div class="activity-entry">
+                        <span class="activity-dot dot-pending"></span>
+                        <div>
+                            <div class="activity-text">Menunggu penugasan reviewer</div>
+                        </div>
+                    </div>
+                @endif
+
+                @if(in_array($protocol->status, $reviewStatuses))
+                    <div class="activity-entry">
+                        <span class="activity-dot dot-done"></span>
+                        <div>
+                            <div class="activity-text">Pengajuan masuk tahap review</div>
+                        </div>
+                    </div>
+                @endif
+
+                @if($protocol->status === 'on_review')
+                    <div class="activity-entry">
+                        <span class="activity-dot dot-pending"></span>
+                        <div>
+                            <div class="activity-text">Sedang direview oleh reviewer</div>
+                        </div>
+                    </div>
+                @endif
+
+                @if($protocol->status === 'revision_required')
+                    <div class="activity-entry">
+                        <span class="activity-dot dot-revision"></span>
+                        <div>
+                            <div class="activity-text" style="color:#9a3412;">Revisi diperlukan</div>
+                        </div>
+                    </div>
+                @endif
+
+                @if($protocol->status === 'revised')
+                    <div class="activity-entry">
+                        <span class="activity-dot dot-done"></span>
+                        <div>
+                            <div class="activity-text">Revisi telah dikirim</div>
+                        </div>
+                    </div>
+                @endif
+
+                @if(in_array($protocol->status, ['approved', 'approved_with_recommendation', 'issued']))
+                    <div class="activity-entry">
+                        <span class="activity-dot dot-approved"></span>
+                        <div>
+                            <div class="activity-text" style="color:#065f46;">Pengajuan disetujui</div>
+                        </div>
+                    </div>
+                @endif
+
+                @if(in_array($protocol->status, ['approved', 'approved_with_recommendation']))
+                    <div class="activity-entry">
+                        <span class="activity-dot dot-pending"></span>
+                        <div>
+                            <div class="activity-text">SKE sedang dibuat</div>
+                        </div>
+                    </div>
+                @endif
+
+                @if($protocol->status === 'approved_with_recommendation')
+                    <div class="activity-entry">
+                        <span class="activity-dot dot-approved"></span>
+                        <div>
+                            <div class="activity-text" style="color:#065f46;">Disetujui dengan rekomendasi</div>
+                        </div>
+                    </div>
+                @endif
+
+                @if($protocol->status === 'issued')
+                    <div class="activity-entry">
+                        <span class="activity-dot dot-approved"></span>
+                        <div>
+                            <div class="activity-text" style="color:#065f46;">Surat kelaikan etik telah diterbitkan</div>
+                        </div>
+                    </div>
+                @endif
+
+                @if($protocol->status === 'disapproved')
+                    <div class="activity-entry">
+                        <span class="activity-dot dot-rejected"></span>
+                        <div>
+                            <div class="activity-text" style="color:#991b1b;">Pengajuan tidak disetujui</div>
+                        </div>
+                    </div>
+                @endif
+
+            </div>
         </div>
 
     </div>
@@ -205,6 +353,23 @@
 
 @push('styles')
 <style>
+    @push('styles')
+<style>
+    @import url('https://fonts.bunny.net/css?family=instrument-sans:400,500,600');
+    
+    body {
+        font-family: 'Instrument Sans', sans-serif;
+    }
+
+    @media (max-width: 900px) {
+        div[style*="grid-template-columns:1fr 340px"] {
+            grid-template-columns: 1fr !important;
+        }
+    }
+
+    /* ... kode CSS lainnya tetap ... */
+</style>
+@endpush
 @media (max-width: 900px) {
     div[style*="grid-template-columns:1fr 340px"] {
         grid-template-columns: 1fr !important;
@@ -236,36 +401,46 @@
     color: var(--navy-deep) !important;
 }
 
-.activity-placeholder {
+.activity-list {
     display: flex;
     flex-direction: column;
-    align-items: center;
-    padding: 1.75rem 1rem;
-    text-align: center;
+    gap: .25rem;
+    padding-left: .25rem;
+    border-left: 2px solid var(--blue-light);
 }
 
-.activity-placeholder-icon {
-    width: 52px; height: 52px;
+.activity-entry {
+    display: flex;
+    align-items: flex-start;
+    gap: .6rem;
+    padding: .4rem 0 .4rem .5rem;
+    font-size: .8rem;
+}
+
+.activity-dot {
+    width: 9px;
+    height: 9px;
     border-radius: 50%;
-    background: var(--blue-pale);
-    color: var(--blue-accent);
-    display: flex; align-items: center; justify-content: center;
-    font-size: 1.35rem;
-    margin-bottom: .85rem;
-    opacity: .7;
+    flex-shrink: 0;
+    margin-top: .32rem;
 }
 
-.activity-placeholder-text {
-    font-size: .875rem;
-    color: var(--text-muted);
+.dot-done     { background: #10b981; }
+.dot-revision { background: #f97316; }
+.dot-approved { background: #059669; }
+.dot-rejected { background: #dc3545; }
+.dot-pending  { background: #d1d5db; border: 2px solid #9ca3af; }
+
+.activity-text {
+    color: var(--navy-deep);
     font-weight: 500;
-    margin-bottom: .25rem;
+    line-height: 1.35;
 }
 
-.activity-placeholder-sub {
-    font-size: .775rem;
+.activity-time {
     color: var(--text-muted);
-    opacity: .7;
+    font-size: .72rem;
+    margin-top: .1rem;
 }
 </style>
 @endpush
