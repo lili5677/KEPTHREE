@@ -15,6 +15,8 @@ use App\Http\Controllers\Sekretariat\DashboardController;
 use App\Http\Controllers\Sekretariat\VerifikasiController;
 use App\Http\Controllers\Reviewer\ReviewController;
 use App\Http\Controllers\Peneliti\SkeController;
+use App\Http\Controllers\Ketua\DashboardController as KetuaDashboardController;
+use App\Http\Controllers\Ketua\SkeController as KetuaSkeController;
 
 Route::get('/register', [AuthController::class, 'showRegister'])->name('register');
 Route::post('/register', [AuthController::class, 'register']);
@@ -30,7 +32,6 @@ Route::middleware('auth')->group(function () {
     Route::get('/peneliti/dashboard', fn() => view('dashboard.peneliti'))->name('peneliti.dashboard.view');
     Route::get('/sekretariat/dashboard', [DashboardController::class, 'index'])->name('sekretariat.dashboard');
     Route::get('/reviewer/dashboard', fn() => view('dashboard.reviewer'))->name('reviewer.dashboard.view');
-    Route::get('/ketua/dashboard', fn() => view('dashboard.ketua'))->name('ketua.dashboard');
 });
 
 // =====================================================================
@@ -173,4 +174,30 @@ Route::middleware(['auth', 'reviewer'])
 
         Route::get('/riwayat-review/{assignment}/edit', [ReviewController::class, 'editHistory'])->name('riwayat.edit');
         Route::put('/riwayat-review/{assignment}', [ReviewController::class, 'updateHistory'])->name('riwayat.update');
+    });
+
+
+    // =====================================================================
+// KETUA
+// =====================================================================
+Route::middleware(['auth', 'ketua'])
+    ->prefix('ketua')
+    ->name('ketua.')
+    ->group(function () {
+
+        Route::get('/dashboard', [KetuaDashboardController::class, 'index'])->name('dashboard');
+
+        // Tanda Tangan SKE
+        Route::get('/tanda-tangan-ske', [KetuaSkeController::class, 'index'])->name('ske.index');
+        Route::get('/tanda-tangan-ske/{ske}', [KetuaSkeController::class, 'show'])->name('ske.show');
+        Route::get('/tanda-tangan-ske/{ske}/preview', [KetuaSkeController::class, 'preview'])->name('ske.preview');
+        Route::post('/tanda-tangan-ske/{ske}/upload', [KetuaSkeController::class, 'uploadSigned'])->name('ske.upload');
+
+        // Riwayat TTD
+        Route::get('/riwayat-ttd', [KetuaSkeController::class, 'history'])->name('riwayat');
+        Route::get('/riwayat-ttd/{ske}', [KetuaSkeController::class, 'historyShow'])->name('riwayat.show');
+        Route::get('/riwayat-ttd/{ske}/download', [KetuaSkeController::class, 'downloadSigned'])->name('riwayat.download');
+
+        // NIP
+        Route::patch('/profil/nip', [KetuaDashboardController::class, 'updateNip'])->name('profil.nip.update');
     });
