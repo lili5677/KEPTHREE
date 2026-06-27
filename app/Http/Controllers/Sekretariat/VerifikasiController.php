@@ -20,8 +20,9 @@ class VerifikasiController extends Controller
         $protocols = Protocol::whereIn('status', [
             'new_proposal',
             'assigned_to_secretary',
+            'revision_required',
         ])
-            ->with('user')
+            ->with(['user', 'latestRevision'])
             ->get();
 
         return view('sekretariat.verifikasi.index', compact('protocols'));
@@ -33,10 +34,13 @@ class VerifikasiController extends Controller
 
         $reviewers = User::role('reviewer')->get();
 
+        $riwayatRevisi = $protocol->revisions()->latest()->get();
+
         return view('sekretariat.verifikasi.detail', compact(
             'protocol',
             'documents',
-            'reviewers'
+            'reviewers',
+            'riwayatRevisi'
         ));
     }
 
@@ -45,11 +49,15 @@ class VerifikasiController extends Controller
         $request->validate([
             'action' => 'required|in:lengkap,tidak_lengkap',
             'review_type' => 'required_if:action,lengkap|nullable|in:exempted,expedited,full_board',
-            'catatan' => 'nullable|string',
+            'catatan_kelengkapan' => 'required_if:action,tidak_lengkap|nullable|string|min:5',
+            'catatan_reviewer' => 'nullable|string|max:1000',
             'exempted_reason' => 'nullable|string',
             'review_deadline' => 'nullable|date|after_or_equal:today',
             'reviewer_ids' => 'nullable|array',
             'reviewer_ids.*' => 'nullable|exists:users,id',
+        ], [
+            'catatan_kelengkapan.required_if' => 'Catatan kekurangan dokumen wajib diisi agar Peneliti tahu apa yang perlu dilengkapi.',
+            'catatan_kelengkapan.min' => 'Catatan kekurangan dokumen minimal 5 karakter.',
         ]);
 
         if ($request->action === 'lengkap') {
@@ -108,8 +116,8 @@ class VerifikasiController extends Controller
                 [
                     'sekretariat_id' => Auth::id(),
                     'verified_at' => now(),
-                    'notes' => $request->catatan,
-                    'catatan' => $request->catatan,
+                    'notes' => $request->catatan_kelengkapan,
+                    'catatan' => $request->catatan_kelengkapan,
                     'status' => $request->action,
                     'review_type' => $verificationReviewType,
                     'keputusan' => $verificationKeputusan,
@@ -160,7 +168,7 @@ class VerifikasiController extends Controller
                         'protocol_id' => $protocol->id,
                         'reviewer_id' => $reviewerId,
                         'deadline' => $request->review_deadline,
-                        'catatan' => $request->catatan,
+                        'catatan' => $request->catatan_reviewer,
                         'status' => 'pending',
                     ]);
                 }

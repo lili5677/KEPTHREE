@@ -180,7 +180,7 @@ textarea.form-control {
 }
 
 .is-invalid {
-    border-color: #dc2626;
+    border-color: #dc2626; 
 }
 
 .form-actions {

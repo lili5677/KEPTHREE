@@ -31,7 +31,7 @@
         }
 
         #sidebar .brand-shield {
-            background: rgba(255, 255, 255, .12) !important;
+            background: rgb(255 255 255) !important;
             box-shadow: 0 8px 22px rgba(0, 0, 0, .22);
         }
 

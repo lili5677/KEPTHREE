@@ -34,7 +34,7 @@ class Protocol extends Model
         'submitted_at'          => 'datetime',
     ];
 
-    // ── Relasi ──────────────────────────────────────────
+    // ── Relasi User ──────────────────────────────────────────
 
     public function user(): BelongsTo
     {
@@ -51,6 +51,8 @@ class Protocol extends Model
         return $this->belongsTo(User::class, 'ketua_penandatangan_id');
     }
 
+    // ── Relasi Dokumen ───────────────────────────────────────
+
     public function documents(): HasMany
     {
         return $this->hasMany(Document::class);
@@ -62,19 +64,16 @@ class Protocol extends Model
                     ->whereIn('type', ['formulir_pengajuan', 'formulir_ringkasan']);
     }
 
-    public function verifications(): HasMany
-    {
-        return $this->hasMany(Verification::class);
-    }
-
-    public function reviews(): HasMany
-    {
-        return $this->hasMany(Review::class);
-    }
-
     public function skeDocument(): HasOne
     {
         return $this->hasOne(SkeDocument::class);
+    }
+
+    // ── Relasi Verifikasi ────────────────────────────────────
+
+    public function verifications(): HasMany
+    {
+        return $this->hasMany(Verification::class);
     }
 
     public function verification(): HasOne
@@ -82,29 +81,70 @@ class Protocol extends Model
         return $this->hasOne(Verification::class, 'protocol_id');
     }
 
+    // ── Relasi Review ────────────────────────────────────────
+
+    public function reviews(): HasMany
+    {
+        return $this->hasMany(Review::class);
+    }
+
+    public function protocolReviewers(): HasMany
+    {
+        return $this->hasMany(ProtocolReviewer::class, 'protocol_id');
+    }
+
+    // ── Relasi Keputusan Sekretariat ─────────────────────────
+
     public function sekretariatDecision(): HasOne
     {
         return $this->hasOne(SekretariatDecision::class, 'protocol_id');
     }
 
-    // ── Helper ──────────────────────────────────────────
+    public function sekretariatDecisions(): HasMany
+    {
+        return $this->hasMany(SekretariatDecision::class, 'protocol_id')
+                    ->orderByDesc('round');
+    }
+
+    public function latestSekretariatDecision(): HasOne
+    {
+        return $this->hasOne(SekretariatDecision::class, 'protocol_id')
+                    ->latestOfMany('round');
+    }
+
+    // ── Relasi Revisi ────────────────────────────────────────
+
+    public function revisions(): HasMany
+    {
+        return $this->hasMany(Revision::class, 'protocol_id');
+    }
+
+    public function latestRevision(): HasOne
+    {
+        return $this->hasOne(Revision::class, 'protocol_id')
+                    ->latestOfMany();
+    }
+
+    // ── Helper ───────────────────────────────────────────────
 
     public static function generateNomorRegistrasi(): string
     {
         $count = self::count() + 1;
+
         return 'PRO-' . str_pad($count, 3, '0', STR_PAD_LEFT);
     }
 
     public function getStatusBadgeClassAttribute(): string
     {
-        return match($this->status) {
-            'new_proposal'          => 'bg-secondary',
-            'waiting_verification'  => 'bg-info text-dark',
-            'under_review'          => 'bg-warning text-dark',
-            'revision_required'     => 'bg-danger',
-            'approved'              => 'bg-success',
-            'rejected'              => 'bg-dark',
-            default                 => 'bg-secondary',
+        return match ($this->status) {
+            'new_proposal'         => 'bg-secondary',
+            'waiting_verification' => 'bg-info text-dark',
+            'under_review',
+            'on_review'            => 'bg-warning text-dark',
+            'revision_required'    => 'bg-danger',
+            'approved'             => 'bg-success',
+            'rejected'             => 'bg-dark',
+            default                => 'bg-secondary',
         };
     }
 
@@ -113,11 +153,12 @@ class Protocol extends Model
         return match ($this->status) {
             'new_proposal'         => 'New Proposal',
             'waiting_verification' => 'Waiting Verification',
-            'under_review'         => 'Under Review',
+            'under_review',
+            'on_review'            => 'Under Review',
             'revision_required'    => 'Revision Required',
             'approved'             => 'Approved',
             'rejected'             => 'Rejected',
-            default                => ucfirst($this->status),
+            default                => ucfirst(str_replace('_', ' ', $this->status)),
         };
     }
 
@@ -126,7 +167,8 @@ class Protocol extends Model
         return match ($this->status) {
             'new_proposal'         => 'amber',
             'waiting_verification' => 'blue',
-            'under_review'         => 'indigo',
+            'under_review',
+            'on_review'            => 'indigo',
             'revision_required'    => 'orange',
             'approved'             => 'green',
             'rejected'             => 'red',
@@ -141,6 +183,23 @@ class Protocol extends Model
 
     public function tanggalSelesai()
     {
-        return $this->tanggalMulai()?->copy()->addMonths($this->durasi_penelitian);
+        if (!$this->tanggalMulai() || !$this->durasi_penelitian) {
+            return null;
+        }
+
+        return $this->tanggalMulai()->copy()->addMonths($this->durasi_penelitian);
+    }
+
+    public function getSudahKirimRevisiMenungguSekretarisAttribute(): bool
+    {
+        if ($this->status !== 'revision_required') {
+            return false;
+        }
+
+        $verifiedAt = $this->verification?->verified_at;
+
+        return $this->revisions
+            ->when($verifiedAt, fn ($collection) => $collection->where('created_at', '>', $verifiedAt))
+            ->isNotEmpty();
     }
 }

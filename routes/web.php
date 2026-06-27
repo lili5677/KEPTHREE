@@ -9,10 +9,12 @@ use App\Http\Controllers\Admin\AssignSekretarisController;
 use App\Http\Controllers\Admin\DokumenController;
 use App\Http\Controllers\Admin\EthicalClearanceController;
 use App\Http\Controllers\Peneliti\RiwayatController;
+use App\Http\Controllers\Peneliti\RevisiController;
 use App\Http\Controllers\Peneliti\TemplateController as PenelitiTemplateController;
 use App\Http\Controllers\Sekretariat\DashboardController;
 use App\Http\Controllers\Sekretariat\VerifikasiController;
 use App\Http\Controllers\Reviewer\ReviewController;
+use App\Http\Controllers\Peneliti\SkeController;
 
 Route::get('/register', [AuthController::class, 'showRegister'])->name('register');
 Route::post('/register', [AuthController::class, 'register']);
@@ -29,6 +31,15 @@ Route::middleware('auth')->group(function () {
     Route::get('/sekretariat/dashboard', [DashboardController::class, 'index'])->name('sekretariat.dashboard');
     Route::get('/reviewer/dashboard', fn() => view('dashboard.reviewer'))->name('reviewer.dashboard.view');
     Route::get('/ketua/dashboard', fn() => view('dashboard.ketua'))->name('ketua.dashboard');
+});
+
+// =====================================================================
+// DOWNLOAD DOKUMEN GLOBAL / COMPATIBILITY ROUTE
+// Untuk view lama yang masih memakai route('verifikasi.download')
+// =====================================================================
+Route::middleware(['auth'])->group(function () {
+    Route::get('/verifikasi/download/{document}', [VerifikasiController::class, 'download'])
+        ->name('verifikasi.download');
 });
 
 // =====================================================================
@@ -87,7 +98,7 @@ Route::middleware(['auth', 'admin'])->group(function () {
     Route::get('/admin/dokumen/{protocol}', [DokumenController::class, 'show'])->name('admin.dokumen.show');
     Route::get('/admin/dokumen/{protocol}/download', [DokumenController::class, 'download'])->name('admin.dokumen.download');
 
-    // Ethical Clearance
+    // Ethical Clearance / SKE
     Route::get('/admin/ethical-clearance', [EthicalClearanceController::class, 'index'])->name('admin.ethical-clearance.index');
     Route::post('/admin/ethical-clearance/{protocol}/terbitkan', [EthicalClearanceController::class, 'terbitkanSke'])->name('admin.ethical-clearance.terbitkan');
     Route::post('/admin/ethical-clearance/ske/{ske}/kirim-ketua', [EthicalClearanceController::class, 'kirimKeKetua'])->name('admin.ethical-clearance.kirim-ketua');
@@ -96,6 +107,8 @@ Route::middleware(['auth', 'admin'])->group(function () {
     Route::get('/admin/ethical-clearance/ske/{ske}/download', [EthicalClearanceController::class, 'downloadSke'])->name('admin.ethical-clearance.download');
     Route::get('/admin/ethical-clearance/ske/{ske}/preview', [EthicalClearanceController::class, 'previewSke'])->name('admin.ethical-clearance.preview');
     Route::post('/admin/ethical-clearance/save-setting', [EthicalClearanceController::class, 'saveSettingForm'])->name('admin.ethical-clearance.save-setting');
+    Route::get('/admin/ethical-clearance/ske/{ske}/revisi', [EthicalClearanceController::class, 'editRevisi'])->name('admin.ethical-clearance.revisi.edit');
+    Route::put('/admin/ethical-clearance/ske/{ske}/revisi', [EthicalClearanceController::class, 'updateRevisi'])->name('admin.ethical-clearance.revisi.update');
 
     // Log
     Route::get('/admin/log', fn() => abort(404))->name('admin.log.index');
@@ -124,6 +137,18 @@ Route::middleware(['auth', 'peneliti'])->prefix('peneliti')->name('peneliti.')->
     Route::get('/riwayat/{protocol}', [RiwayatController::class, 'show'])->name('riwayat.show');
     Route::get('/riwayat/dokumen/{document}/download', [RiwayatController::class, 'downloadDokumen'])->name('riwayat.download');
 
+    // Revisi
+    Route::get('/riwayat/{protocol}/revisi', [RevisiController::class, 'show'])->name('revisi.show');
+    Route::post('/riwayat/{protocol}/revisi', [RevisiController::class, 'store'])->name('revisi.store');
+    Route::get('/revisi/{revision}/download', [RevisiController::class, 'download'])->name('revisi.download');
+
+    // SKE Peneliti
+Route::get('/ske/{ske}', [SkeController::class, 'show'])->name('ske.show');
+Route::get('/ske/{ske}/preview', [SkeController::class, 'preview'])->name('ske.preview');
+Route::get('/ske/{ske}/download', [SkeController::class, 'download'])->name('ske.download');
+Route::post('/ske/{ske}/approve', [SkeController::class, 'approve'])->name('ske.approve');
+Route::post('/ske/{ske}/reject', [SkeController::class, 'reject'])->name('ske.reject');
+
     Route::get('/template', [PenelitiTemplateController::class, 'index'])->name('template');
     Route::get('/template/{template}/download', [PenelitiTemplateController::class, 'download'])->name('template.download');
 });
@@ -141,7 +166,11 @@ Route::middleware(['auth', 'reviewer'])
         Route::get('/tugas-review/{assignment}', [ReviewController::class, 'show'])->name('tugas.show');
         Route::post('/tugas-review/{assignment}/submit', [ReviewController::class, 'submit'])->name('tugas.submit');
         Route::get('/riwayat-review', [ReviewController::class, 'history'])->name('riwayat');
+
         Route::get('/dokumen/{document}/preview', [ReviewController::class, 'previewDocument'])->name('dokumen.preview');
+        Route::get('/dokumen/{document}/download', [ReviewController::class, 'downloadDocument'])->name('dokumen.download');
+        Route::get('/revisi/{revision}/download', [ReviewController::class, 'downloadRevision'])->name('revisi.download');
+
         Route::get('/riwayat-review/{assignment}/edit', [ReviewController::class, 'editHistory'])->name('riwayat.edit');
         Route::put('/riwayat-review/{assignment}', [ReviewController::class, 'updateHistory'])->name('riwayat.update');
     });
