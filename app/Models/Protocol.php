@@ -55,6 +55,12 @@ class Protocol extends Model
         return $this->hasMany(Review::class);
     }
 
+    // Relasi ke tabel protocol_reviewers (assignment reviewer per babak)
+    public function protocolReviewers()
+    {
+        return $this->hasMany(\App\Models\ProtocolReviewer::class, 'protocol_id');
+    }
+
     // ── Helper ──────────────────────────────────────────
 
     /**
@@ -89,5 +95,41 @@ class Protocol extends Model
     public function sekretariatDecision()
     {
         return $this->hasOne(\App\Models\SekretariatDecision::class, 'protocol_id');
+    }
+
+    // Histori seluruh keputusan sekretariat (semua babak), terbaru duluan
+    public function sekretariatDecisions()
+    {
+        return $this->hasMany(\App\Models\SekretariatDecision::class, 'protocol_id')->orderByDesc('round');
+    }
+
+    public function latestSekretariatDecision()
+    {
+        return $this->hasOne(\App\Models\SekretariatDecision::class, 'protocol_id')->latestOfMany('round');
+    }
+
+    // Relasi ke tabel revisions (riwayat upload revisi oleh Peneliti)
+    public function revisions()
+    {
+        return $this->hasMany(\App\Models\Revision::class, 'protocol_id');
+    }
+
+    public function latestRevision()
+    {
+        return $this->hasOne(\App\Models\Revision::class, 'protocol_id')->latestOfMany();
+    }
+
+    // Apakah Peneliti sudah mengunggah revisi terbaru setelah Sekretaris menandai dokumen tidak lengkap?
+    public function getSudahKirimRevisiMenungguSekretarisAttribute(): bool
+    {
+        if ($this->status !== 'revision_required') {
+            return false;
+        }
+
+        $verifiedAt = $this->verification?->verified_at;
+
+        return $this->revisions
+            ->when($verifiedAt, fn($collection) => $collection->where('created_at', '>', $verifiedAt))
+            ->isNotEmpty();
     }
 }

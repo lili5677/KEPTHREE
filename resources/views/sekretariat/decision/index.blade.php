@@ -137,7 +137,7 @@
                         </td>
 
                         <td class="p-3 whitespace-nowrap">
-                            @if($p->sekretariatDecision)
+                            @if($p->decision_status === 'Sudah Diputuskan')
                                 <span class="px-2 py-1 rounded-full text-xs bg-blue-100 text-blue-700">
                                     Sudah Diputuskan
                                 </span>
@@ -151,10 +151,10 @@
                         <td class="p-3 text-center whitespace-nowrap">
                             <a href="{{ route('sekretariat.decision.show', $p->id) }}"
                                class="inline-flex items-center gap-1 px-3 py-2 rounded-lg text-white text-xs
-                               {{ $p->sekretariatDecision ? 'bg-blue-600 hover:bg-blue-700' : 'bg-purple-600 hover:bg-purple-700' }}">
+                               {{ $p->decision_status === 'Sudah Diputuskan' ? 'bg-blue-600 hover:bg-blue-700' : 'bg-purple-600 hover:bg-purple-700' }}">
 
-                                @if($p->sekretariatDecision)
-                                    <i class="fas fa-edit"></i> Edit
+                                @if($p->decision_status === 'Sudah Diputuskan')
+                                    <i class="fas fa-eye"></i> Lihat
                                 @else
                                     <i class="fas fa-gavel"></i> Putuskan
                                 @endif

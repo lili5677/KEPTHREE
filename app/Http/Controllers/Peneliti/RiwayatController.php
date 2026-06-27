@@ -20,7 +20,7 @@ class RiwayatController extends Controller
         $user = Auth::user();
 
         $query = Protocol::where('user_id', $user->id)
-                         ->with('documents')
+                         ->with(['documents', 'verification', 'revisions'])
                          ->latest('submitted_at')
                          ->latest('created_at');
 
@@ -61,7 +61,7 @@ class RiwayatController extends Controller
             abort(403, 'Akses ditolak.');
         }
 
-        $protocol->load(['documents', 'user']);
+        $protocol->load(['documents', 'user', 'verification', 'revisions']);
 
         return view('peneliti.riwayat-detail', compact('protocol'));
     }

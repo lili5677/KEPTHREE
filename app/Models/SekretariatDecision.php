@@ -11,6 +11,7 @@ class SekretariatDecision extends Model
         'sekretariat_id',
         'keputusan',
         'catatan',
+        'round',
     ];
 
     public function protocol()

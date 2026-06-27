@@ -172,6 +172,16 @@ Route::middleware(['auth', 'peneliti'])->prefix('peneliti')->name('peneliti.')->
     Route::get('/riwayat/dokumen/{document}/download', [RiwayatController::class, 'downloadDokumen'])
         ->name('riwayat.download');
 
+    // Upload Revisi (Revision Required) =====
+    Route::get('/riwayat/{protocol}/revisi', [App\Http\Controllers\Peneliti\RevisiController::class, 'show'])
+        ->name('revisi.show');
+
+    Route::post('/riwayat/{protocol}/revisi', [App\Http\Controllers\Peneliti\RevisiController::class, 'store'])
+        ->name('revisi.store');
+
+    Route::get('/revisi/{revision}/download', [App\Http\Controllers\Peneliti\RevisiController::class, 'download'])
+        ->name('revisi.download');
+
     // Peneliti Unduh Template
     Route::get('/template', [PenelitiTemplateController::class, 'index'])
         ->name('template');

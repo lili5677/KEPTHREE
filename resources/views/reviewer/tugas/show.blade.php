@@ -129,6 +129,40 @@
             @endforelse
         </div>
 
+        @if($protocol->revisions->isNotEmpty())
+            <div class="kep-card">
+                <div class="kep-card-title">
+                    <i class="bi bi-file-earmark-arrow-up"></i> Dokumen Revisi dari Peneliti
+                </div>
+
+                @foreach($protocol->revisions as $rev)
+                    <div class="doc-review-item">
+                        <div class="doc-icon">
+                            <i class="bi bi-file-earmark-arrow-up"></i>
+                        </div>
+
+                        <div style="flex:1;min-width:0;">
+                            <div class="doc-name">
+                                {{ $rev->original_filename ?: 'Dokumen Revisi' }}
+                            </div>
+                            <div class="doc-sub">
+                                {{ $rev->submitted_at?->translatedFormat('d M Y, H:i') ?? $rev->created_at->translatedFormat('d M Y, H:i') }}
+                                — {{ $rev->catatan_revisi }}
+                            </div>
+                        </div>
+
+                        <div style="display:flex;gap:.45rem;flex-shrink:0;">
+                            <a href="{{ route('peneliti.revisi.download', $rev->id) }}"
+                            class="btn-kep btn-primary"
+                            style="font-size:.8rem;padding:.42rem .7rem;">
+                                <i class="bi bi-download"></i> Unduh
+                            </a>
+                        </div>
+                    </div>
+                @endforeach
+            </div>
+        @endif
+
     </div>
 
     {{-- KOLOM KANAN --}}

@@ -66,6 +66,7 @@ class ReviewController extends Controller
         $assignment->load([
             'protocol.user',
             'protocol.documents',
+            'protocol.revisions',
             'reviewer',
         ]);
 
@@ -160,73 +161,16 @@ class ReviewController extends Controller
             abort(403, 'Anda tidak memiliki akses ke review ini.');
         }
 
-        if ($assignment->status !== 'done') {
-            return redirect()
-                ->route('reviewer.riwayat')
-                ->with('error', 'Review yang belum selesai tidak dapat diedit dari halaman riwayat.');
-        }
-
-        $assignment->load([
-            'protocol.user',
-            'reviewer',
-        ]);
-
-        $review = Review::where('protocol_reviewer_id', $assignment->id)
-            ->where('reviewer_id', Auth::id())
-            ->firstOrFail();
-
-        return view('reviewer.riwayat.edit', compact(
-            'assignment',
-            'review'
-        ));
+        return redirect()
+            ->route('reviewer.riwayat')
+            ->with('error', 'Review yang sudah disubmit tidak dapat diedit kembali.');
     }
 
     public function updateHistory(Request $request, ProtocolReviewer $assignment)
     {
-        if ($assignment->reviewer_id !== Auth::id()) {
-            abort(403, 'Anda tidak memiliki akses ke review ini.');
-        }
-
-        if ($assignment->status !== 'done') {
-            return redirect()
-                ->route('reviewer.riwayat')
-                ->with('error', 'Review yang belum selesai tidak dapat diperbarui dari halaman riwayat.');
-        }
-
-        $request->validate([
-            'catatan' => 'required|string|min:10',
-            'keputusan' => 'required|in:approved,approved_with_recommendation,minor_revision,major_revision,rejected',
-        ], [
-            'catatan.required' => 'Catatan review wajib diisi.',
-            'catatan.min' => 'Catatan review minimal 10 karakter.',
-            'keputusan.required' => 'Keputusan review wajib dipilih.',
-            'keputusan.in' => 'Keputusan review tidak valid.',
-        ]);
-
-        DB::transaction(function () use ($request, $assignment) {
-            $review = Review::where('protocol_reviewer_id', $assignment->id)
-                ->where('reviewer_id', Auth::id())
-                ->firstOrFail();
-
-            $review->update([
-                'catatan' => $request->catatan,
-                'keputusan' => $request->keputusan,
-            ]);
-
-            DB::table('activity_logs')->insert([
-                'user_id' => Auth::id(),
-                'type' => 'review',
-                'action' => 'Reviewer memperbarui keputusan dan catatan review.',
-                'subject_type' => Protocol::class,
-                'subject_id' => $assignment->protocol_id,
-                'created_at' => now(),
-                'updated_at' => now(),
-            ]);
-        });
-
         return redirect()
             ->route('reviewer.riwayat')
-            ->with('success', 'Keputusan dan catatan review berhasil diperbarui.');
+            ->with('error', 'Review yang sudah disubmit tidak dapat diedit kembali.');
     }
 
     public function previewDocument(Document $document)

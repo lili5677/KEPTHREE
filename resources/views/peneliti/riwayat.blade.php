@@ -258,6 +258,15 @@
                             </div>
                         @endif
 
+                        @if($item->status === 'approved_with_recommendation')
+                            <div class="activity-entry">
+                                <span class="activity-dot dot-revision"></span>
+                                <div>
+                                    <div class="activity-text" style="color:#9a3412;">Disetujui dengan rekomendasi — revisi diperlukan</div>
+                                </div>
+                            </div>
+                        @endif
+
                         @if($item->status === 'revised')
                             <div class="activity-entry">
                                 <span class="activity-dot dot-done"></span>
@@ -267,7 +276,7 @@
                             </div>
                         @endif
 
-                        @if(in_array($item->status, ['approved', 'approved_with_recommendation', 'issued']))
+                        @if(in_array($item->status, ['approved', 'issued']))
                             <div class="activity-entry">
                                 <span class="activity-dot dot-approved"></span>
                                 <div>
@@ -276,7 +285,7 @@
                             </div>
                         @endif
 
-                        @if(in_array($item->status, ['approved', 'approved_with_recommendation']))
+                        @if($item->status === 'approved')
                             <div class="activity-entry">
                                 <span class="activity-dot dot-pending"></span>
                                 <div>
@@ -317,8 +326,8 @@
                 Lihat Detail
             </a>
 
-            @if($item->status === 'revision_required')
-                <a href="#"
+            @if(in_array($item->status, ['revision_required', 'approved_with_recommendation']) && !$item->sudah_kirim_revisi_menunggu_sekretaris)
+                <a href="{{ route('peneliti.revisi.show', $item->id) }}"
                    class="btn-kep btn-primary"
                    style="padding:.38rem .75rem;font-size:.78rem;"
                    title="Upload Revisi">

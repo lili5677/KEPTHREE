@@ -72,10 +72,14 @@
 
     {{-- Aksi header --}}
     <div style="display:flex;gap:.6rem;align-items:center;flex-wrap:wrap;">
-        @if($protocol->status === 'revision_required')
-            <a href="#" class="btn-kep btn-primary" style="font-size:.875rem;">
+        @if(in_array($protocol->status, ['revision_required', 'approved_with_recommendation']) && !$protocol->sudah_kirim_revisi_menunggu_sekretaris)
+            <a href="{{ route('peneliti.revisi.show', $protocol->id) }}" class="btn-kep btn-primary" style="font-size:.875rem;">
                 <i class="bi bi-upload"></i> Upload Revisi
             </a>
+        @elseif($protocol->sudah_kirim_revisi_menunggu_sekretaris)
+            <span class="btn-kep" style="font-size:.875rem;background:#fff7ed;color:#9a3412;border:1px solid #fed7aa;cursor:default;">
+                <i class="bi bi-hourglass-split"></i> Revisi Terkirim, Menunggu Sekretariat
+            </span>
         @endif
 
         <a href="{{ route('peneliti.riwayat') }}"
@@ -298,7 +302,7 @@
                     </div>
                 @endif
 
-                @if(in_array($protocol->status, ['approved', 'approved_with_recommendation', 'issued']))
+                @if(in_array($protocol->status, ['approved', 'issued']))
                     <div class="activity-entry">
                         <span class="activity-dot dot-approved"></span>
                         <div>
@@ -307,7 +311,7 @@
                     </div>
                 @endif
 
-                @if(in_array($protocol->status, ['approved', 'approved_with_recommendation']))
+                @if($protocol->status === 'approved')
                     <div class="activity-entry">
                         <span class="activity-dot dot-pending"></span>
                         <div>
@@ -318,9 +322,9 @@
 
                 @if($protocol->status === 'approved_with_recommendation')
                     <div class="activity-entry">
-                        <span class="activity-dot dot-approved"></span>
+                        <span class="activity-dot dot-revision"></span>
                         <div>
-                            <div class="activity-text" style="color:#065f46;">Disetujui dengan rekomendasi</div>
+                            <div class="activity-text" style="color:#9a3412;">Disetujui dengan rekomendasi - menunggu Anda mengunggah revisi</div>
                         </div>
                     </div>
                 @endif
