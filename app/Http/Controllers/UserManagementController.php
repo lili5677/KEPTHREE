@@ -8,6 +8,7 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Spatie\Permission\Models\Role;
+use Illuminate\Validation\Rules\Password;
 
 class UserManagementController extends Controller
 {
@@ -138,5 +139,24 @@ class UserManagementController extends Controller
         return redirect()
             ->route('admin.users.index')
             ->with('success', 'Akun berhasil diaktifkan kembali.');
+    }
+
+    public function resetPassword(Request $request, User $user)
+    {
+        $validated = $request->validateWithBag('resetPassword', [
+            'password' => ['required', 'confirmed', Password::min(8)],
+        ], [
+            'password.required' => 'Password baru wajib diisi.',
+            'password.confirmed' => 'Konfirmasi password tidak sama.',
+            'password.min' => 'Password minimal harus 8 karakter.',
+        ]);
+
+        $user->update([
+            'password' => Hash::make($validated['password']),
+        ]);
+
+        return redirect()
+            ->route('admin.users.index')
+            ->with('success', 'Password pengguna ' . $user->name . ' berhasil direset.');
     }
 }

@@ -78,7 +78,8 @@
         </a>
 
         {{-- Semua Dokumen --}}
-        <a href="#"
+        <a href="{{ route('admin.dokumen.index') }}"
+           class="{{ request()->routeIs('admin.dokumen.*') ? 'active' : '' }}"
            data-tooltip="Semua Dokumen">
             <svg viewBox="0 0 24 24">
                 <path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/>
@@ -87,7 +88,8 @@
         </a>
 
         {{-- Ethical Clearance --}}
-        <a href="#"
+        <a href="{{ route('admin.ethical-clearance.index') }}"
+           class="{{ request()->routeIs('admin.ethical-clearance.*') ? 'active' : '' }}"
            data-tooltip="Ethical Clearance">
             <svg viewBox="0 0 24 24">
                 <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
@@ -127,7 +129,7 @@
                     <polyline points="16 17 21 12 16 7"/>
                     <line x1="21" y1="12" x2="9" y2="12"/>
                 </svg>
-                <span class="sidebar-link-text">Logout</span>
+                <span class="sidebar-link-text">Keluar</span>
             </button>
         </form>
     </div>

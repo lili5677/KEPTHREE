@@ -23,6 +23,7 @@ class User extends Authenticatable
         'email',
         'password',
         'is_active',
+        'nip',
     ];
 
     /**
@@ -70,5 +71,11 @@ class User extends Authenticatable
     public function appNotifications(): HasMany
     {
         return $this->hasMany(Notification::class, 'user_id');
+    }
+
+    /** SKE yang harus ditandatangani user ini sebagai ketua */
+    public function skeDocuments(): HasMany
+    {
+        return $this->hasMany(SkeDocument::class, 'ketua_id');
     }
 }
