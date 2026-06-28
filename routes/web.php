@@ -8,6 +8,7 @@ use App\Http\Controllers\Admin\TemplateController;
 use App\Http\Controllers\Admin\AssignSekretarisController;
 use App\Http\Controllers\Admin\DokumenController;
 use App\Http\Controllers\Admin\EthicalClearanceController;
+use App\Http\Controllers\Admin\ActivityLogController;
 use App\Http\Controllers\Peneliti\RiwayatController;
 use App\Http\Controllers\Peneliti\RevisiController;
 use App\Http\Controllers\Peneliti\TemplateController as PenelitiTemplateController;
@@ -143,8 +144,9 @@ Route::middleware(['auth', 'admin'])->group(function () {
     Route::get('/admin/ethical-clearance/ske/{ske}/revisi', [EthicalClearanceController::class, 'editRevisi'])->name('admin.ethical-clearance.revisi.edit');
     Route::put('/admin/ethical-clearance/ske/{ske}/revisi', [EthicalClearanceController::class, 'updateRevisi'])->name('admin.ethical-clearance.revisi.update');
 
-    // Log
-    Route::get('/admin/log', fn() => abort(404))->name('admin.log.index');
+    
+    // Log Aktivitas
+    Route::get('/log', [ActivityLogController::class, 'index'])->name('log.index');
 });
 
 // =====================================================================
