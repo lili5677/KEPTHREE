@@ -3,510 +3,225 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>@yield('title', 'Sistem KEP – Sekretariat')</title>
+    <meta name="csrf-token" content="{{ csrf_token() }}">
+
+    <title>@yield('title', 'Dashboard Sekretariat') — KEPTHREE</title>
+
     <link rel="icon" type="image/png" sizes="32x32" href="{{ asset('favicon-32x32.png') }}">
+    <link rel="icon" type="image/png" sizes="16x16" href="{{ asset('favicon-16x16.png') }}">
+    <link rel="apple-touch-icon" sizes="180x180" href="{{ asset('apple-touch-icon.png') }}">
+    <link rel="shortcut icon" href="{{ asset('kepicon.ico') }}">
 
-    
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-    
-
-    <!-- FONTS SAMA DENGAN PENELITI -->
     <link rel="preconnect" href="https://fonts.bunny.net">
-    <link href="https://fonts.bunny.net/css?family=instrument-sans:400,500,600" rel="stylesheet" />
-
-    <!-- BOOTSTRAP ICONS (DIPERLUKAN UNTUK ICON KOTAK) -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
+    <link href="https://fonts.bunny.net/css?family=instrument-sans:400,500,600" rel="stylesheet">
 
     <script src="https://cdn.tailwindcss.com"></script>
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
 
+    <link href="{{ asset('css/peneliti.css') }}" rel="stylesheet">
+
     <style>
-        @import url('https://fonts.bunny.net/css?family=instrument-sans:400,500,600');
+      /* =========================================================
+        SEKRETARIAT SIDEBAR THEME - RED
+        ========================================================= */
 
-        /* ===== RESET & BASE - SAMA DENGAN PENELITI ===== */
-        *, *::before, *::after {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
+        #sidebar {
+            background: linear-gradient(180deg, #450A0A 0%, #7F1D1D 52%, #1F0A0A 100%) !important;
+            border-right: 1px solid rgba(255, 255, 255, .08);
         }
 
-        :root {
-            --navy-deep   : #0A1931;
-            --navy-mid    : #1A3D63;
-            --blue-accent : #4A7FA7;
-            --blue-light  : #B3CFE5;
-            --blue-pale   : #dbedf7;
-            --surface     : #F6FAFD;
-            --white       : #FFFFFF;
-            --text-primary: #0A1931;
-            --text-muted  : #5b7a96;
-            --border      : #d0e3f0;
-            --danger      : #dc3545;
-            --success     : #198754;
-            --warning     : #d97706;
-
-            --sidebar-w           : 260px;
-            --sidebar-collapsed-w : 52px;
-            --radius      : 12px;
-            --radius-sm   : 8px;
-            --shadow-sm   : 0 1px 4px rgba(10,25,49,.08);
-            --shadow-md   : 0 4px 16px rgba(10,25,49,.10);
-            --shadow-lg   : 0 8px 32px rgba(10,25,49,.13);
-            --transition  : .22s cubic-bezier(.4,0,.2,1);
+        #sidebar .sidebar-brand {
+            border-bottom: 1px solid rgba(255, 255, 255, .12);
         }
 
-        html, body {
-            height: 100%;
-            font-family: 'Instrument Sans', 'Segoe UI', system-ui, sans-serif;
-            font-size: 15px;
-            color: var(--text-primary);
-            background: var(--surface);
-            -webkit-font-smoothing: antialiased;
+        #sidebar .brand-shield {
+            background: rgb(255 255 255) !important;
+            box-shadow: 0 8px 22px rgba(0, 0, 0, .22);
         }
 
-        a { text-decoration: none; color: inherit; }
-        img { max-width: 100%; }
-
-        /* ===== LAYOUT SHELL ===== */
-        .kep-layout {
-            display: flex;
-            min-height: 100vh;
+        #sidebar .brand-text .name {
+            color: #FFFFFF !important;
         }
 
-        /* ===== SIDEBAR SEKRETARIAT ===== */
-        #sidebar-sekretariat {
-            width: var(--sidebar-w);
-            min-height: 100vh;
-            background: var(--navy-mid);
-            display: flex;
-            flex-direction: column;
-            position: fixed;
-            top: 0; left: 0; bottom: 0;
-            z-index: 200;
-            transition: width var(--transition), transform var(--transition);
-            overflow: hidden;
+        #sidebar .brand-text .role {
+            color: #FECACA !important;
         }
 
-        /* ===== BRAND ===== */
-        .sidebar-brand {
-            display: flex;
-            align-items: center;
-            gap: .85rem;
-            padding: 0 1rem;
-            border-bottom: 1px solid rgba(255,255,255,.1);
-            height: 70px;
-            min-height: 70px;
-            overflow: hidden;
-            white-space: nowrap;
-            flex-shrink: 0;
+        #sidebar .nav-section-label {
+            color: #FCA5A5 !important;
         }
 
-        .brand-shield {
-            width: 38px;
-            height: 38px;
-            background: #d0e3f0;
-            border-radius: 10px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: #fff;
-            font-size: 1rem;
-            flex-shrink: 0;
-            box-shadow: 0 2px 8px rgba(0,0,0,.25);
-            overflow: hidden;
+        #sidebar .nav-item {
+            color: #FEE2E2 !important;
         }
 
-        .brand-shield img {
-            width: 30px;
-            height: 30px;
-            object-fit: contain;
+        #sidebar .nav-item i {
+            color: #FECACA !important;
         }
 
-        .brand-text {
-            flex: 1;
-            min-width: 0;
-            overflow: hidden;
+        #sidebar .nav-item:hover {
+            background: rgba(255, 255, 255, .10) !important;
+            color: #FFFFFF !important;
         }
 
-        .brand-text .name {
-            font-size: .93rem;
-            font-weight: 600;
-            color: #fff;
-            line-height: 1.2;
-            white-space: nowrap;
+        #sidebar .nav-item:hover i {
+            color: #FFFFFF !important;
         }
 
-        .brand-text .role {
-            font-size: .72rem;
-            color: var(--blue-light);
-            opacity: .85;
-            white-space: nowrap;
+        #sidebar .nav-item.active {
+            background: linear-gradient(135deg, #DC2626 0%, #B91C1C 100%) !important;
+            color: #FFFFFF !important;
+            box-shadow: 0 10px 24px rgba(0, 0, 0, .22);
         }
 
-        /* ===== NAVIGATION ===== */
-        .sidebar-nav {
-            flex: 1;
-            padding: 1rem .6rem;
-            display: flex;
-            flex-direction: column;
-            gap: 2px;
-            overflow-y: auto;
-            overflow-x: hidden;
+        #sidebar .nav-item.active i {
+            color: #FFFFFF !important;
         }
 
-        .sidebar-nav::-webkit-scrollbar {
-            width: 4px;
-        }
-        .sidebar-nav::-webkit-scrollbar-track {
-            background: transparent;
-        }
-        .sidebar-nav::-webkit-scrollbar-thumb {
-            background: rgba(255,255,255,.15);
-            border-radius: 4px;
+        #sidebar .sidebar-toggle-btn,
+        #sidebar .sidebar-expand-btn {
+            color: #FEE2E2 !important;
+            background: rgba(255, 255, 255, .10) !important;
         }
 
-        .nav-item {
-            display: flex;
-            align-items: center;
-            gap: .8rem;
-            padding: .65rem .85rem;
-            border-radius: var(--radius-sm);
-            color: rgba(255,255,255,.72);
-            font-size: .875rem;
-            font-weight: 500;
-            cursor: pointer;
-            white-space: nowrap;
-            overflow: hidden;
-            transition: background var(--transition), color var(--transition);
-            position: relative;
+        #sidebar .sidebar-toggle-btn:hover,
+        #sidebar .sidebar-expand-btn:hover {
+            background: rgba(255, 255, 255, .18) !important;
+            color: #FFFFFF !important;
         }
 
-        .nav-item i {
-            font-size: 1.05rem;
-            width: 22px;
-            text-align: center;
-            flex-shrink: 0;
-            transition: color var(--transition);
+        #sidebar .sidebar-footer {
+            border-top: 1px solid rgba(255, 255, 255, .12);
         }
 
-        .nav-item .nav-label {
-            transition: opacity var(--transition), width var(--transition);
-            white-space: nowrap;
+        #sidebar .user-card {
+            background: rgba(255, 255, 255, .10) !important;
+            border: 1px solid rgba(255, 255, 255, .10);
         }
 
-        .nav-item:hover {
-            background: rgba(255,255,255,.1);
-            color: #fff;
+        #sidebar .user-avatar {
+            background: #FECACA !important;
+            color: #450A0A !important;
         }
 
-        .nav-item.active {
-            background: var(--blue-accent);
-            color: #fff;
-            box-shadow: 0 2px 8px rgba(74,127,167,.4);
+        #sidebar .user-info .u-name {
+            color: #FFFFFF !important;
         }
 
-        .nav-item.active i {
-            color: #fff;
+        #sidebar .user-info .u-email {
+            color: #FECACA !important;
         }
 
-        /* ===== FOOTER ===== */
-        .sidebar-footer {
-            padding: 1rem .75rem;
-            border-top: 1px solid rgba(255,255,255,.1);
-            white-space: nowrap;
-            overflow: hidden;
+        #sidebar .logout-btn {
+            background: rgba(255, 255, 255, .10) !important;
+            color: #FEE2E2 !important;
+            border: 1px solid rgba(255, 255, 255, .10);
         }
 
-        .user-card {
-            display: flex;
-            align-items: center;
-            gap: .75rem;
-            padding: .5rem .5rem;
-            border-radius: var(--radius-sm);
+        #sidebar .logout-btn:hover {
+            background: #991B1B !important;
+            color: #FFFFFF !important;
         }
 
-        .user-avatar {
-            width: 34px;
-            height: 34px;
-            border-radius: 50%;
-            background: var(--blue-accent);
-            color: #fff;
-            font-weight: 600;
-            font-size: .82rem;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            flex-shrink: 0;
+        #sidebar .logout-btn i {
+            color: inherit !important;
         }
 
-        .user-info .u-name {
-            font-size: .82rem;
-            font-weight: 600;
-            color: #fff;
-        }
-
-        .user-info .u-email {
-            font-size: .72rem;
-            color: var(--blue-light);
-            opacity: .8;
-        }
-
-        .logout-btn {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: .5rem;
-            width: 100%;
-            margin-top: .5rem;
-            padding: .5rem .75rem;
-            border-radius: var(--radius-sm);
-            background: rgba(220,53,69,.18);
-            border: 1px solid rgba(220,53,69,.3);
-            color: #f8c0c0;
-            font-size: .82rem;
-            font-weight: 500;
-            cursor: pointer;
-            transition: background var(--transition), border-color var(--transition);
-            font-family: 'Instrument Sans', sans-serif;
-        }
-
-        .logout-btn:hover {
-            background: rgba(220,53,69,.32);
-            border-color: rgba(220,53,69,.5);
-            color: #fff;
-        }
-
-        /* ===== MAIN CONTENT ===== */
-        #main {
-            margin-left: var(--sidebar-w);
-            flex: 1;
-            min-height: 100vh;
-            padding: 2rem 2.5rem;
-            transition: margin-left var(--transition);
-        }
-
-        /* ===== RESPONSIVE ===== */
-        @media (max-width: 768px) {
-            #sidebar-sekretariat {
-                transform: translateX(-100%);
-                width: var(--sidebar-w) !important;
-                transition: transform var(--transition), width var(--transition);
-            }
-            #sidebar-sekretariat.mobile-open {
-                transform: translateX(0);
-            }
-            #main {
-                margin-left: 0 !important;
-                padding: 1rem;
-                padding-top: calc(1rem + 60px);
-            }
-            .topbar {
-                display: flex;
-                position: fixed;
-                top: 0;
-                left: 0;
-                right: 0;
-                z-index: 100;
-            }
-        }
-
-        /* ============================================================
-           OVERRIDE - WARNA AKTIF MENJADI PURPLE (KHAS SEKRETARIAT)
-           ============================================================ */
-        #sidebar-sekretariat .nav-item.active {
-            background: #7C3AED !important;
-            color: #fff !important;
-            box-shadow: 0 2px 8px rgba(124, 58, 237, 0.4) !important;
-        }
-
-        #sidebar-sekretariat .nav-item.active i {
-            color: #fff !important;
-        }
-
-        #sidebar-sekretariat .user-avatar {
-            background: #8B5CF6 !important;
-        }
-
-        #sidebar-sekretariat .brand-text .role {
-            color: #C4B5FD !important;
-            opacity: 1 !important;
-        }
-
-        /* HIDE search bar */
-        .sidebar-search {
-            display: none !important;
+        .topbar .sidebar-toggle-btn {
+            color: #7F1D1D !important;
         }
     </style>
 
+    {{-- SweetAlert2 --}}
+    <link href="https://cdn.jsdelivr.net/npm/@sweetalert2/theme-bootstrap-4/bootstrap-4.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
     @stack('styles')
 </head>
-<body class="bg-gray-50">
+
+<body>
+@php
+    $authUser = auth()->user();
+
+    $manajemenReviewerUrl = '#';
+
+    if (\Illuminate\Support\Facades\Route::has('sekretariat.review.index')) {
+        $manajemenReviewerUrl = route('sekretariat.review.index');
+    } elseif (\Illuminate\Support\Facades\Route::has('sekretariat.assign-reviewer.index')) {
+        $manajemenReviewerUrl = route('sekretariat.assign-reviewer.index');
+    } elseif (\Illuminate\Support\Facades\Route::has('sekretariat.assignment.index')) {
+        $manajemenReviewerUrl = route('sekretariat.assignment.index');
+    }
+
+    $riwayatProposalUrl = '#';
+
+    if (\Illuminate\Support\Facades\Route::has('sekretariat.riwayat.index')) {
+        $riwayatProposalUrl = route('sekretariat.riwayat.index');
+    } elseif (\Illuminate\Support\Facades\Route::has('sekretariat.riwayat')) {
+        $riwayatProposalUrl = route('sekretariat.riwayat');
+    }
+@endphp
 
 <div class="kep-layout">
 
-    <!-- ===== SIDEBAR SEKRETARIAT ===== -->
-    <aside id="sidebar-sekretariat">
+    {{-- TOPBAR MOBILE --}}
+    <div class="topbar" id="mobileTopbar">
+        <button class="sidebar-toggle-btn" id="mobileToggle"
+                style="color:var(--navy-mid);font-size:1.3rem;">
+            <i class="bi bi-list"></i>
+        </button>
 
-        <!-- Brand -->
-        <div class="sidebar-brand">
-            <div class="brand-shield" style="background: #d0e3f0; border-radius: 10px; width: 38px; height: 38px; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 8px rgba(0,0,0,.25); overflow: hidden;">
-                <img src="{{ asset('favicon-32x32.png') }}" alt="Logo KEPTHREE" style="width: 30px; height: 30px; object-fit: contain;">
+        <div style="display:flex;align-items:center;gap:.6rem;">
+            <div style="width:32px;height:32px;background:#d0e3f0;border-radius:10px;
+                        display:flex;align-items:center;justify-content:center;
+                        box-shadow:0 2px 8px rgba(0,0,0,.15);overflow:hidden;flex-shrink:0;">
+                <img src="{{ asset('favicon-32x32.png') }}"
+                     alt="Logo KEPTHREE"
+                     style="width:26px;height:26px;object-fit:contain;">
             </div>
-            <div class="brand-text">
+
+            <div style="display:flex;flex-direction:column;line-height:1.2;">
+                <span style="font-weight:600;font-size:.9rem;color:var(--navy-deep);">KEPTHREE</span>
+                <span style="font-size:.7rem;color:var(--text-muted);font-weight:500;">Sekretariat</span>
+            </div>
+        </div>
+    </div>
+
+    {{-- SIDEBAR --}}
+    <nav id="sidebar">
+
+        {{-- BRAND --}}
+        <div class="sidebar-brand">
+            <div class="brand-shield sidebar-brand-content">
+                <img src="{{ asset('favicon-32x32.png') }}"
+                     alt="Logo KEPTHREE"
+                     style="width:30px;height:30px;object-fit:contain;">
+            </div>
+
+            <div class="brand-text sidebar-brand-content">
                 <div class="name">KEPTHREE</div>
                 <div class="role">Sekretariat</div>
             </div>
+
+            <button class="sidebar-toggle-btn sidebar-brand-content"
+                    id="sidebarCollapseBtn"
+                    title="Ciutkan sidebar">
+                <i class="bi bi-layout-sidebar-reverse"></i>
+            </button>
+
+            <button class="sidebar-expand-btn"
+                    id="sidebarExpandBtn"
+                    title="Buka sidebar">
+                <i class="bi bi-layout-sidebar"></i>
+            </button>
         </div>
 
-        <!-- Navigation -->
+        {{-- NAVIGATION --}}
         <nav class="sidebar-nav">
+            <div class="nav-section-label">Menu Utama</div>
+
             <a href="{{ route('sekretariat.dashboard') }}"
                class="nav-item {{ request()->routeIs('sekretariat.dashboard') ? 'active' : '' }}"
                data-tooltip="Dashboard">
@@ -521,11 +236,11 @@
                 <span class="nav-label">Verifikasi Dokumen</span>
             </a>
 
-            <a href="#"
-               class="nav-item {{ request()->routeIs('sekretariat.review.*') ? 'active' : '' }}"
-               data-tooltip="Assignment Reviewer">
+            <a href="{{ $manajemenReviewerUrl }}"
+               class="nav-item {{ request()->routeIs('sekretariat.review.*') || request()->routeIs('sekretariat.assign-reviewer.*') || request()->routeIs('sekretariat.assignment.*') ? 'active' : '' }}"
+               data-tooltip="Manajemen Reviewer">
                 <i class="bi bi-people"></i>
-                <span class="nav-label">Assignment Reviewer</span>
+                <span class="nav-label">Manajemen Reviewer</span>
             </a>
 
             <a href="{{ route('sekretariat.decision.index') }}"
@@ -535,26 +250,28 @@
                 <span class="nav-label">Secretary Decision</span>
             </a>
 
-            <a href="#"
-               class="nav-item {{ request()->routeIs('sekretariat.riwayat') ? 'active' : '' }}"
+            <a href="{{ $riwayatProposalUrl }}"
+               class="nav-item {{ request()->routeIs('sekretariat.riwayat*') ? 'active' : '' }}"
                data-tooltip="Riwayat Proposal">
                 <i class="bi bi-clock-history"></i>
                 <span class="nav-label">Riwayat Proposal</span>
             </a>
         </nav>
 
-        <!-- Footer -->
+        {{-- FOOTER --}}
         <div class="sidebar-footer">
             <div class="user-card">
                 <div class="user-avatar">
-                    {{ strtoupper(substr(auth()->user()->name ?? 'S', 0, 1)) }}
+                    {{ strtoupper(substr($authUser->name ?? 'S', 0, 1)) }}
                 </div>
+
                 <div class="user-info">
-                    <div class="u-name">{{ auth()->user()->name ?? 'Sekretariat' }}</div>
-                    <div class="u-email">{{ auth()->user()->email ?? 'sekretariat@kep.ac.id' }}</div>
+                    <div class="u-name">{{ $authUser->name ?? 'Sekretariat' }}</div>
+                    <div class="u-email">{{ $authUser->email ?? 'sekretariat@kep.ac.id' }}</div>
                 </div>
             </div>
-            <form action="{{ route('logout') }}" method="POST">
+
+            <form method="POST" action="{{ route('logout') }}">
                 @csrf
                 <button type="submit" class="logout-btn">
                     <i class="bi bi-box-arrow-right"></i>
@@ -563,14 +280,157 @@
             </form>
         </div>
 
-    </aside>
+    </nav>
 
-    <!-- ===== MAIN CONTENT ===== -->
+    {{-- MAIN CONTENT --}}
     <main id="main">
         @yield('content')
     </main>
 
 </div>
+
+{{-- SIDEBAR OVERLAY MOBILE --}}
+<div id="sidebarOverlay"
+     style="display:none;position:fixed;inset:0;background:rgba(10,25,49,.45);
+            z-index:150;backdrop-filter:blur(2px);
+            opacity:0;transition:opacity .22s cubic-bezier(.4,0,.2,1);"
+     onclick="closeMobileSidebar()"></div>
+
+<script>
+const sidebar      = document.getElementById('sidebar');
+const bodyEl       = document.body;
+const collapseBtn  = document.getElementById('sidebarCollapseBtn');
+const expandBtn    = document.getElementById('sidebarExpandBtn');
+const COLLAPSE_KEY = 'kep_sekretariat_sidebar_collapsed';
+
+function isMobile() {
+    return window.innerWidth <= 768;
+}
+
+function setSidebarState(collapsed) {
+    if (collapsed) {
+        sidebar.classList.add('collapsed');
+        bodyEl.classList.add('sidebar-collapsed');
+    } else {
+        sidebar.classList.remove('collapsed');
+        bodyEl.classList.remove('sidebar-collapsed');
+    }
+
+    localStorage.setItem(COLLAPSE_KEY, collapsed ? '1' : '0');
+}
+
+(function () {
+    if (!isMobile() && localStorage.getItem(COLLAPSE_KEY) === '1') {
+        setSidebarState(true);
+    }
+})();
+
+collapseBtn.addEventListener('click', function (e) {
+    e.stopPropagation();
+
+    if (isMobile()) {
+        closeMobileSidebar();
+    } else {
+        setSidebarState(true);
+    }
+});
+
+expandBtn.addEventListener('click', function (e) {
+    e.stopPropagation();
+    setSidebarState(false);
+});
+
+function openMobileSidebar() {
+    const overlay = document.getElementById('sidebarOverlay');
+
+    overlay.style.display = 'block';
+    overlay.getBoundingClientRect();
+    overlay.style.opacity = '1';
+
+    sidebar.classList.add('mobile-open');
+}
+
+function closeMobileSidebar() {
+    const overlay = document.getElementById('sidebarOverlay');
+
+    overlay.style.opacity = '0';
+    sidebar.classList.remove('mobile-open');
+
+    setTimeout(function () {
+        overlay.style.display = 'none';
+    }, 220);
+}
+
+const mobileToggle = document.getElementById('mobileToggle');
+
+if (mobileToggle) {
+    mobileToggle.addEventListener('click', openMobileSidebar);
+}
+
+let lastMobile = isMobile();
+
+window.addEventListener('resize', function () {
+    const nowMobile = isMobile();
+
+    if (nowMobile === lastMobile) return;
+
+    lastMobile = nowMobile;
+
+    if (!nowMobile) {
+        closeMobileSidebar();
+
+        if (localStorage.getItem(COLLAPSE_KEY) === '1') {
+            setSidebarState(true);
+        } else {
+            setSidebarState(false);
+        }
+    } else {
+        closeMobileSidebar();
+    }
+});
+
+document.querySelectorAll('.kep-alert.flash-alert').forEach(function (el) {
+    setTimeout(function () {
+        el.style.transition = 'opacity .5s, transform .5s';
+        el.style.opacity = '0';
+        el.style.transform = 'translateY(-4px)';
+
+        setTimeout(function () {
+            el.remove();
+        }, 500);
+    }, 6000);
+});
+</script>
+
+@if(session('success'))
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    Swal.fire({
+        icon: 'success',
+        title: 'Berhasil',
+        text: "{{ session('success') }}",
+        confirmButtonText: 'Oke',
+        confirmButtonColor: '#B91C1C',
+        timer: 10000,
+        timerProgressBar: true
+    });
+});
+</script>
+@endif
+
+@if(session('error'))
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    Swal.fire({
+        icon: 'error',
+        title: 'Terjadi Kesalahan',
+        text: "{{ session('error') }}",
+        confirmButtonText: 'Oke',
+        confirmButtonColor: '#dc3545'
+    });
+});
+</script>
+@endif
 
 @stack('scripts')
 </body>

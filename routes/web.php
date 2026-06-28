@@ -17,6 +17,10 @@ use App\Http\Controllers\Reviewer\ReviewController;
 use App\Http\Controllers\Peneliti\SkeController;
 use App\Http\Controllers\Ketua\DashboardController as KetuaDashboardController;
 use App\Http\Controllers\Ketua\SkeController as KetuaSkeController;
+use App\Http\Controllers\Admin\DashboardController as AdminDashboardController;
+use App\Http\Controllers\Sekretariat\ReviewerManagementController;
+use App\Http\Controllers\Sekretariat\DecisionController;
+use App\Http\Controllers\Sekretariat\RiwayatProposalController;
 
 Route::get('/register', [AuthController::class, 'showRegister'])->name('register');
 Route::post('/register', [AuthController::class, 'register']);
@@ -46,21 +50,49 @@ Route::middleware(['auth'])->group(function () {
 // =====================================================================
 // SEKRETARIAT
 // =====================================================================
-Route::middleware(['auth'])
+Route::middleware(['auth', 'sekretariat'])
     ->prefix('sekretariat')
     ->name('sekretariat.')
     ->group(function () {
 
         // Verifikasi
-        Route::get('/verifikasi', [VerifikasiController::class, 'index'])->name('verifikasi.index');
-        Route::get('/verifikasi/{protocol}', [VerifikasiController::class, 'show'])->name('verifikasi.show');
-        Route::post('/verifikasi/{protocol}/check', [VerifikasiController::class, 'check'])->name('verifikasi.check');
-        Route::get('/verifikasi/download/{document}', [VerifikasiController::class, 'download'])->name('verifikasi.download');
+        Route::get('/verifikasi', [VerifikasiController::class, 'index'])
+            ->name('verifikasi.index');
+
+        Route::get('/verifikasi/{protocol}', [VerifikasiController::class, 'show'])
+            ->name('verifikasi.show');
+
+        Route::post('/verifikasi/{protocol}/check', [VerifikasiController::class, 'check'])
+            ->name('verifikasi.check');
+
+        Route::get('/verifikasi/download/{document}', [VerifikasiController::class, 'download'])
+            ->name('verifikasi.download');
+
 
         // Decision
-        Route::get('/decision', [App\Http\Controllers\Sekretariat\DecisionController::class, 'index'])->name('decision.index');
-        Route::get('/decision/{protocol}', [App\Http\Controllers\Sekretariat\DecisionController::class, 'show'])->name('decision.show');
-        Route::post('/decision/{protocol}', [App\Http\Controllers\Sekretariat\DecisionController::class, 'store'])->name('decision.store');
+        Route::get('/decision', [DecisionController::class, 'index'])
+            ->name('decision.index');
+
+        Route::get('/decision/{protocol}', [DecisionController::class, 'show'])
+            ->name('decision.show');
+
+        Route::post('/decision/{protocol}', [DecisionController::class, 'store'])
+            ->name('decision.store');
+
+
+        // Manajemen Reviewer
+        Route::get('/review', [ReviewerManagementController::class, 'index'])
+            ->name('review.index');
+
+        Route::get('/review/{protocol}/edit', [ReviewerManagementController::class, 'edit'])
+            ->name('review.edit');
+
+        Route::put('/review/{protocol}', [ReviewerManagementController::class, 'update'])
+            ->name('review.update');
+
+        // Riwayat Proposal
+        Route::get('/riwayat', [RiwayatProposalController::class, 'index'])
+            ->name('riwayat.index');
     });
 
 // =====================================================================
@@ -68,7 +100,7 @@ Route::middleware(['auth'])
 // =====================================================================
 Route::middleware(['auth', 'admin'])->group(function () {
 
-    Route::get('/admin/dashboard', fn() => view('dashboard.admin'))->name('admin.dashboard');
+    Route::get('/admin/dashboard', [AdminDashboardController::class, 'index'])->name('admin.dashboard');
 
     // User Management
     Route::get('/admin/users', [UserManagementController::class, 'index'])->name('admin.users.index');
