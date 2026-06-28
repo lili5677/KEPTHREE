@@ -14,6 +14,7 @@ class ProtocolReviewer extends Model
         'deadline',
         'catatan',
         'status',
+        'round',
     ];
 
     public function protocol()

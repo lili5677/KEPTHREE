@@ -11,6 +11,7 @@ use App\Services\SkeGeneratorService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Validation\Rule;
 
 class EthicalClearanceController extends Controller
 {
@@ -53,13 +54,6 @@ class EthicalClearanceController extends Controller
 
     // ─── Halaman utama ──────────────────────────────────────────────
 
-    /**
-     * Halaman utama Ethical Clearance — 4 tab:
-     * 1. Perlu Diterbitkan (approved tapi belum ada SkeDocument)
-     * 2. Menunggu Proses (sudah ada SkeDocument, status berjalan)
-     * 3. Arsip (status terbit)
-     * 4. Setting format & ketua default
-     */
     public function index()
     {
         $setting = $this->getSetting();
@@ -104,10 +98,6 @@ class EthicalClearanceController extends Controller
 
     // ─── Step 1: Admin menerbitkan SKE (nomor + ketua) ──────────────
 
-    /**
-     * Admin mengisi nomor surat & pilih ketua, sistem generate dokumen SKE
-     * dari template, lalu kirim ke peneliti untuk dikonfirmasi.
-     */
     public function terbitkanSke(Request $request, Protocol $protocol)
     {
         $request->validate([
@@ -139,8 +129,6 @@ class EthicalClearanceController extends Controller
                 'status'          => 'draft',
             ]);
 
-            // Sinkronkan nomor registrasi & ketua penandatangan ke tabel protocols
-            // agar konsisten dengan data yang sudah ada (tanpa ubah migration)
             $protocol->update([
                 'nomor_registrasi'       => $request->nomor_surat,
                 'ketua_penandatangan_id' => $ketua->id,
@@ -176,20 +164,14 @@ class EthicalClearanceController extends Controller
 
     // ─── Step 2: Proses revisi (dari catatan peneliti) ──────────────
 
-    /**
-     * Dipanggil ketika admin menerima notifikasi revisi dari peneliti
-     * dan meminta sistem memproses ulang SKE dengan catatan tersebut.
-     * (Catatan revisi sendiri diasumsikan sudah tersimpan oleh role peneliti
-     * ke kolom `catatan_revisi` & status `revisi` — di luar scope ini.
-     * Method ini menangani sisi admin: regenerate & kirim ke ketua.)
-     */
     public function prosesRevisi(SkeDocument $ske)
     {
         if ($ske->status !== 'revisi') {
             return back()->with('error', 'SKE ini tidak dalam status revisi.');
         }
 
-        // Regenerate ulang dokumen (data protokol bisa saja sudah diperbarui)
+        $ske->load(['protocol.user', 'ketua']);
+
         try {
             $filePath = $this->skeGenerator->generate($ske);
         } catch (\Throwable $e) {
@@ -198,28 +180,31 @@ class EthicalClearanceController extends Controller
 
         DB::transaction(function () use ($ske, $filePath) {
             $ske->update([
-                'file_path'           => $filePath,
-                'status'              => 'menunggu_ttd',
-                'direvisi_at'         => now(),
-                'dikirim_ke_ketua_at' => now(),
+                'file_path'              => $filePath,
+                'signed_file_path'       => null,
+                'status'                 => 'menunggu_konfirmasi',
+                'catatan_revisi'         => null,
+                'direvisi_at'            => now(),
+                'dikirim_ke_peneliti_at' => now(),
+                'dikirim_ke_ketua_at'    => null,
+                'ditandatangani_at'      => null,
+                'diterbitkan_at'         => null,
             ]);
 
             Notification::create([
-                'user_id' => $ske->ketua_id,
-                'message' => "SKE {$ske->nomor_surat} (revisi) telah siap dan menunggu tanda tangan Anda.",
+                'user_id' => $ske->protocol->user_id,
+                'message' => "SKE {$ske->nomor_surat} telah diperbaiki oleh Admin. Mohon periksa kembali kebenaran data SKE.",
+                'is_read' => false,
             ]);
         });
 
-        return redirect()->route('admin.ethical-clearance.index')
-            ->with('success', "SKE {$ske->nomor_surat} berhasil direvisi dan dikirim ke ketua untuk tanda tangan.");
+        return redirect()
+            ->route('admin.ethical-clearance.index')
+            ->with('success', "SKE {$ske->nomor_surat} berhasil diproses ulang dan dikirim kembali ke peneliti.");
     }
 
     // ─── Step 2b: Tidak ada revisi → langsung kirim ke ketua ────────
 
-    /**
-     * Dipanggil ketika peneliti mengonfirmasi tidak ada kesalahan
-     * (di sisi admin: tombol untuk meneruskan SKE ke ketua).
-     */
     public function kirimKeKetua(SkeDocument $ske)
     {
         if ($ske->status !== 'menunggu_konfirmasi') {
@@ -244,10 +229,6 @@ class EthicalClearanceController extends Controller
 
     // ─── Step 3: Terbitkan final ke peneliti (setelah ditandatangani) ──
 
-    /**
-     * Dipanggil setelah ketua menandatangani (status sudah_ttd),
-     * admin menerbitkan SKE final ke peneliti.
-     */
     public function publish(SkeDocument $ske)
     {
         if ($ske->status !== 'sudah_ttd') {
@@ -330,5 +311,113 @@ class EthicalClearanceController extends Controller
 
         return redirect()->route('admin.ethical-clearance.index')
             ->with('success', 'Setting berhasil disimpan.');
+    }
+
+    public function editRevisi(SkeDocument $ske)
+    {
+        if ($ske->status !== 'revisi') {
+            return redirect()
+                ->route('admin.ethical-clearance.index')
+                ->with('error', 'SKE ini tidak sedang dalam status revisi.');
+        }
+
+        $ske->load(['protocol.user', 'ketua']);
+
+        $ketuaList = User::role('ketua')
+            ->whereNotNull('nip')
+            ->where('nip', '!=', '')
+            ->get();
+
+        return view('admin.ethical-clearance.revisi', compact('ske', 'ketuaList'));
+    }
+
+    public function updateRevisi(Request $request, SkeDocument $ske)
+    {
+        if ($ske->status !== 'revisi') {
+            return redirect()
+                ->route('admin.ethical-clearance.index')
+                ->with('error', 'SKE ini tidak sedang dalam status revisi.');
+        }
+
+        $request->validate([
+            'nomor_surat' => [
+                'required',
+                'string',
+                'max:100',
+                Rule::unique('ske_documents', 'nomor_surat')->ignore($ske->id),
+            ],
+            'ketua_id'           => ['required', 'exists:users,id'],
+            'tanggal_terbit'    => ['required', 'date'],
+            'title'              => ['required', 'string', 'max:255'],
+            'program_studi'      => ['nullable', 'string', 'max:255'],
+            'sumber_pendanaan'   => ['nullable', 'string', 'max:255'],
+            'durasi_penelitian'  => ['nullable', 'integer', 'min:1', 'max:120'],
+        ], [
+            'nomor_surat.required' => 'Nomor surat wajib diisi.',
+            'nomor_surat.unique'   => 'Nomor surat sudah digunakan.',
+            'ketua_id.required'    => 'Ketua penandatangan wajib dipilih.',
+            'title.required'       => 'Judul penelitian wajib diisi.',
+        ]);
+
+        $ketua = User::role('ketua')->findOrFail($request->ketua_id);
+
+        if (empty($ketua->nip)) {
+            return back()
+                ->withInput()
+                ->with('error', "{$ketua->name} belum mengisi NIP. Ketua wajib melengkapi NIP sebelum bisa ditugaskan menandatangani SKE.");
+        }
+
+        DB::transaction(function () use ($request, $ske, $ketua) {
+            $protocol = $ske->protocol()->lockForUpdate()->firstOrFail();
+
+            $protocol->update([
+                'title'                    => $request->title,
+                'program_studi'            => $request->program_studi,
+                'sumber_pendanaan'         => $request->sumber_pendanaan,
+                'durasi_penelitian'        => $request->durasi_penelitian,
+                'nomor_registrasi'         => $request->nomor_surat,
+                'ketua_penandatangan_id'   => $ketua->id,
+            ]);
+
+            $ske->update([
+                'nomor_surat'    => $request->nomor_surat,
+                'ketua_id'       => $ketua->id,
+                'tanggal_terbit' => $request->tanggal_terbit,
+            ]);
+        });
+
+        $ske->refresh()->load(['protocol.user', 'ketua']);
+
+        try {
+            $filePath = $this->skeGenerator->generate($ske);
+        } catch (\Throwable $e) {
+            return back()
+                ->withInput()
+                ->with('error', 'Gagal generate ulang dokumen SKE: ' . $e->getMessage());
+        }
+
+        DB::transaction(function () use ($ske, $filePath) {
+            $ske->update([
+                'file_path'               => $filePath,
+                'signed_file_path'        => null,
+                'status'                  => 'menunggu_konfirmasi',
+                'catatan_revisi'          => null,
+                'direvisi_at'             => now(),
+                'dikirim_ke_peneliti_at'  => now(),
+                'dikirim_ke_ketua_at'     => null,
+                'ditandatangani_at'       => null,
+                'diterbitkan_at'          => null,
+            ]);
+
+            Notification::create([
+                'user_id' => $ske->protocol->user_id,
+                'message' => "SKE {$ske->nomor_surat} telah diperbaiki oleh Admin. Mohon periksa kembali kebenaran data SKE.",
+                'is_read' => false,
+            ]);
+        });
+
+        return redirect()
+            ->route('admin.ethical-clearance.index')
+            ->with('success', "SKE {$ske->nomor_surat} berhasil diperbaiki dan dikirim kembali ke peneliti untuk konfirmasi ulang.");
     }
 }

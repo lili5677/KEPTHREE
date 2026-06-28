@@ -60,11 +60,117 @@
     .proto-info { font-size: 12px; color: var(--text-muted); display: flex; gap: 16px; flex-wrap: wrap; }
 
     .proto-form {
-        margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--border);
-        display: grid; grid-template-columns: 1fr 1fr auto; gap: 10px; align-items: end;
+        margin-top: 16px;
+        padding: 16px;
+        border-top: 1px solid var(--border);
+        background: #f8fafc;
+        border-radius: 10px;
+        display: grid;
+        grid-template-columns: minmax(220px, 1fr) minmax(260px, 1fr) auto;
+        gap: 14px;
+        align-items: end;
     }
-    @media (max-width: 768px) { .proto-form { grid-template-columns: 1fr; } }
 
+    .proto-form .form-group {
+        margin-bottom: 0 !important;
+    }
+
+    .ske-field-box {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+    }
+
+    .ske-field-box .form-label {
+        min-height: 18px;
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        font-size: 12px;
+        font-weight: 700;
+        color: var(--text-primary);
+        margin-bottom: 0;
+    }
+
+    .ske-required {
+        color: #ef4444;
+        font-weight: 800;
+    }
+
+    .ske-field-box .form-control {
+        height: 42px;
+        border-radius: 9px;
+        font-size: 13px;
+    }
+
+    .ske-field-box select.form-control {
+        line-height: 1.2;
+    }
+
+    .ske-action-box {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        align-items: stretch;
+        justify-content: flex-start;
+    }
+
+    .ske-action-label-spacer {
+        min-height: 18px;
+        font-size: 12px;
+        font-weight: 700;
+        visibility: hidden;
+    }
+
+    .ske-action-hint-spacer {
+        min-height: 16px;
+        font-size: 11.5px;
+        line-height: 1.3;
+        visibility: hidden;
+    }
+
+    .btn-terbitkan-ske {
+        height: 42px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 7px;
+        white-space: nowrap;
+        padding: 0 16px;
+        border-radius: 9px;
+        font-size: 12.5px;
+        font-weight: 700;
+    }
+
+    .btn-terbitkan-ske i {
+        font-size: 14px;
+    }
+
+    @media (max-width: 980px) {
+        .proto-form {
+            grid-template-columns: 1fr 1fr;
+        }
+
+        .ske-action-box {
+            grid-column: 1 / -1;
+            justify-content: flex-end;
+        }
+    }
+
+    @media (max-width: 768px) {
+        .proto-form {
+            grid-template-columns: 1fr;
+            padding: 14px;
+        }
+
+        .ske-action-box {
+            justify-content: stretch;
+        }
+
+        .btn-terbitkan-ske {
+            width: 100%;
+        }
+    }
     .badge {
         display: inline-flex; align-items: center; font-size: 10.5px; font-weight: 700;
         padding: 2px 8px; border-radius: 20px;
@@ -225,18 +331,36 @@
                     </div>
 
                     <form method="POST"
-                          action="{{ route('admin.ethical-clearance.terbitkan', $protocol->id) }}"
-                          class="proto-form">
+                        action="{{ route('admin.ethical-clearance.terbitkan', $protocol->id) }}"
+                        class="proto-form">
                         @csrf
-                        <div class="form-group" style="margin-bottom:0;">
-                            <label class="form-label">Nomor Surat <span style="color:#ef4444;">*</span></label>
-                            <input type="text" name="nomor_surat" value="{{ old('nomor_surat', $suggestNomor) }}"
-                                   class="form-control" placeholder="Contoh: KEP/2026/001" required>
-                            <div class="form-hint-plain">Format: KODE/TAHUN/NOMOR-URUT</div>
+
+                        <div class="ske-field-box">
+                            <label class="form-label">
+                                Nomor Surat <span class="ske-required">*</span>
+                            </label>
+
+                            <input type="text"
+                                name="nomor_surat"
+                                value="{{ old('nomor_surat', $suggestNomor) }}"
+                                class="form-control"
+                                placeholder="Contoh: KEP/2026/001"
+                                required>
+
+                            <div class="form-hint-plain">
+                                Format: KODE/TAHUN/NOMOR-URUT
+                            </div>
                         </div>
-                        <div class="form-group" style="margin-bottom:0;">
-                            <label class="form-label">Ketua Penandatangan <span style="color:#ef4444;">*</span></label>
-                            <select name="ketua_id" class="form-control" required {{ $ketuaList->isEmpty() ? 'disabled' : '' }}>
+
+                        <div class="ske-field-box">
+                            <label class="form-label">
+                                Ketua Penandatangan <span class="ske-required">*</span>
+                            </label>
+
+                            <select name="ketua_id"
+                                    class="form-control"
+                                    required
+                                    {{ $ketuaList->isEmpty() ? 'disabled' : '' }}>
                                 <option value="">-- Pilih Ketua --</option>
                                 @foreach($ketuaList as $ketua)
                                     <option value="{{ $ketua->id }}"
@@ -245,19 +369,27 @@
                                     </option>
                                 @endforeach
                             </select>
+
                             @if($ketuaList->isEmpty())
                                 <div class="form-hint-plain" style="color:#ef4444;">
                                     Belum ada ketua yang bisa ditugaskan — semua ketua belum mengisi NIP.
                                 </div>
+                            @else
+                                <div class="form-hint-plain">
+                                    Pilih ketua yang akan menandatangani SKE.
+                                </div>
                             @endif
                         </div>
-                        <div style="padding-top:20px;">
-                            <button type="submit" class="btn btn-primary" style="white-space:nowrap;">
-                                <svg style="width:14px;height:14px;stroke:white;stroke-width:2.5;fill:none;flex-shrink:0;" viewBox="0 0 24 24">
-                                    <path d="M9 12l2 2 4-4"/><circle cx="12" cy="12" r="10"/>
-                                </svg>
+
+                        <div class="ske-action-box">
+                            <div class="ske-action-label-spacer">Aksi</div>
+
+                            <button type="submit" class="btn btn-primary btn-terbitkan-ske">
+                                <i class="bi bi-patch-check"></i>
                                 Terbitkan SKE
                             </button>
+
+                            <div class="ske-action-hint-spacer">spacer</div>
                         </div>
                     </form>
                 </div>
@@ -320,24 +452,21 @@
                         </a>
                         @endif
 
-                        {{-- Menunggu konfirmasi peneliti: bisa langsung diteruskan jika tak ada revisi --}}
+                        {{-- Menunggu konfirmasi peneliti --}}
                         @if($ske->status === 'menunggu_konfirmasi')
-                            <form method="POST" action="{{ route('admin.ethical-clearance.kirim-ketua', $ske->id) }}">
-                                @csrf
-                                <button type="submit" class="btn btn-primary btn-sm">
-                                    Teruskan ke Ketua (Tidak Ada Revisi)
-                                </button>
-                            </form>
+                            <span class="btn btn-warning btn-sm" style="cursor:default;">
+                                <i class="bi bi-hourglass-split"></i>
+                                Menunggu Konfirmasi Peneliti
+                            </span>
                         @endif
 
-                        {{-- Revisi: admin proses ulang & kirim ke ketua --}}
+                        {{-- Revisi: admin proses ulang --}}
                         @if($ske->status === 'revisi')
-                            <form method="POST" action="{{ route('admin.ethical-clearance.proses-revisi', $ske->id) }}">
-                                @csrf
-                                <button type="submit" class="btn btn-primary btn-sm">
-                                    Proses Revisi & Kirim ke Ketua
-                                </button>
-                            </form>
+                            <a href="{{ route('admin.ethical-clearance.revisi.edit', $ske->id) }}"
+                            class="btn btn-primary btn-sm">
+                                <i class="bi bi-pencil-square"></i>
+                                Perbaiki & Kirim Ulang ke Peneliti
+                            </a>
                         @endif
 
                         {{-- Menunggu TTD: tinggal menunggu ketua, tidak ada aksi admin --}}

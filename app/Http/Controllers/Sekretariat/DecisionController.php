@@ -29,7 +29,7 @@ class DecisionController extends Controller
             ->unique();
 
         $query = Protocol::whereIn('id', $protocolIds)
-            ->with(['user', 'verification', 'sekretariatDecision']);
+            ->with(['user', 'verification', 'latestSekretariatDecision']);
 
         if ($filterReviewType) {
             $query->whereHas('verification', function ($q) use ($filterReviewType) {
@@ -49,16 +49,16 @@ class DecisionController extends Controller
             ->orderBy('updated_at', 'desc')
             ->get()
             ->map(function ($protocol) {
-                $totalReviewers = ProtocolReviewer::where('protocol_id', $protocol->id)->count();
+                $totalReviewers = ProtocolReviewer::where('protocol_id', $protocol->id)
+                    ->distinct('reviewer_id')
+                    ->count('reviewer_id');
 
-                $completedReviews = Review::where('protocol_id', $protocol->id)
-                    ->whereNotNull('reviewed_at')
-                    ->count();
+                $completedReviews = $this->countCompletedUniqueReviewers($protocol->id);
 
                 $protocol->review_progress = $completedReviews . '/' . $totalReviewers;
                 $protocol->is_complete = $totalReviewers > 0 && $completedReviews == $totalReviewers;
                 $protocol->review_type_label = $protocol->verification->review_type ?? 'unknown';
-                $protocol->decision_status = $protocol->sekretariatDecision
+                $protocol->decision_status = $protocol->latestSekretariatDecision
                     ? 'Sudah Diputuskan'
                     : 'Belum Diputuskan';
 
@@ -87,13 +87,19 @@ class DecisionController extends Controller
      */
     public function show(Protocol $protocol)
     {
-        $protocol->load(['user', 'verification', 'sekretariatDecision']);
+        $protocol->load(['user', 'verification', 'documents', 'revisions', 'latestSekretariatDecision', 'sekretariatDecisions.sekretariat']);
 
         $reviewType = $protocol->verification->review_type ?? null;
 
-        $reviews = Review::where('protocol_id', $protocol->id)
+        // Ambil review dari assignment reviewer TERBARU untuk masing-masing reviewer
+        $latestAssignmentIdsPerReviewer = ProtocolReviewer::where('protocol_id', $protocol->id)
+            ->selectRaw('MAX(id) as id')
+            ->groupBy('reviewer_id')
+            ->pluck('id');
+
+        $reviews = Review::whereIn('protocol_reviewer_id', $latestAssignmentIdsPerReviewer)
             ->whereNotNull('reviewed_at')
-            ->with('reviewer')
+            ->with('reviewer', 'assignment')
             ->get();
 
         if ($reviews->isEmpty()) {
@@ -102,16 +108,27 @@ class DecisionController extends Controller
                 ->with('error', 'Belum ada review dari reviewer.');
         }
 
-        $totalReviewers = ProtocolReviewer::where('protocol_id', $protocol->id)->count();
-        $completedReviews = $reviews->count();
+        $totalReviewers = ProtocolReviewer::where('protocol_id', $protocol->id)
+            ->distinct('reviewer_id')
+            ->count('reviewer_id');
+
+        $completedReviews = $this->countCompletedUniqueReviewers($protocol->id);
 
         $minReviewer = $reviewType === 'full_board' ? 5 : 3;
 
+        // Histori keputusan sekretariat babak sebelumnya (jika ini babak ke-2+)
+        $decisionHistory = $protocol->sekretariatDecisions;
+        $existingDecision = $decisionHistory->first();
+
+        // Apakah protocol ini sedang dalam babak revisi (sudah pernah Approved with Recommendation)?
+        $isRevisionRound = $decisionHistory->where('keputusan', 'approved_with_recommendation')->isNotEmpty();
+
+        $menungguRevisiPeneliti = $this->isMenungguRevisiPeneliti($protocol, $existingDecision);
+
         $isComplete = $totalReviewers > 0
             && $completedReviews == $totalReviewers
-            && $completedReviews >= $minReviewer;
-
-        $existingDecision = SekretariatDecision::where('protocol_id', $protocol->id)->first();
+            && $completedReviews >= $minReviewer
+            && !$menungguRevisiPeneliti;
 
         return view('sekretariat.decision.show', compact(
             'protocol',
@@ -121,7 +138,10 @@ class DecisionController extends Controller
             'isComplete',
             'minReviewer',
             'reviewType',
-            'existingDecision'
+            'existingDecision',
+            'decisionHistory',
+            'isRevisionRound',
+            'menungguRevisiPeneliti'
         ));
     }
 
@@ -143,11 +163,19 @@ class DecisionController extends Controller
             'catatan' => 'nullable|string|max:1000',
         ]);
 
-        $totalReviewers = ProtocolReviewer::where('protocol_id', $protocol->id)->count();
+        $existingDecision = SekretariatDecision::where('protocol_id', $protocol->id)
+            ->orderByDesc('round')
+            ->first();
 
-        $completedReviews = Review::where('protocol_id', $protocol->id)
-            ->whereNotNull('reviewed_at')
-            ->count();
+        if ($this->isMenungguRevisiPeneliti($protocol, $existingDecision)) {
+            return back()->with('error', 'Pengajuan ini sedang menunggu Peneliti mengunggah revisi. Keputusan baru belum dapat ditetapkan.');
+        }
+
+        $totalReviewers = ProtocolReviewer::where('protocol_id', $protocol->id)
+            ->distinct('reviewer_id')
+            ->count('reviewer_id');
+
+        $completedReviews = $this->countCompletedUniqueReviewers($protocol->id);
 
         $minReviewer = $reviewType === 'full_board' ? 5 : 3;
 
@@ -160,16 +188,17 @@ class DecisionController extends Controller
         }
 
         DB::transaction(function () use ($request, $protocol) {
-            SekretariatDecision::updateOrCreate(
-                [
-                    'protocol_id' => $protocol->id,
-                ],
-                [
-                    'sekretariat_id' => Auth::id(),
-                    'keputusan' => $request->keputusan,
-                    'catatan' => $request->catatan,
-                ]
-            );
+
+            // Babak keputusan sekretariat berikutnya (tidak menimpa histori sebelumnya)
+            $nextRound = SekretariatDecision::where('protocol_id', $protocol->id)->max('round') + 1;
+
+            SekretariatDecision::create([
+                'protocol_id' => $protocol->id,
+                'sekretariat_id' => Auth::id(),
+                'keputusan' => $request->keputusan,
+                'catatan' => $request->catatan,
+                'round' => $nextRound,
+            ]);
 
             $statusMap = [
                 'approved' => 'approved',
@@ -190,14 +219,18 @@ class DecisionController extends Controller
             DB::table('activity_logs')->insert([
                 'user_id' => Auth::id(),
                 'type' => 'keputusan',
-                'action' => "Menetapkan keputusan: {$keputusanLabel[$request->keputusan]} untuk protocol '{$protocol->title}'",
+                'action' => "Menetapkan keputusan (babak {$nextRound}): {$keputusanLabel[$request->keputusan]} untuk protocol '{$protocol->title}'",
                 'subject_type' => Protocol::class,
                 'subject_id' => $protocol->id,
                 'created_at' => now(),
                 'updated_at' => now(),
             ]);
 
-            $message = "Keputusan akhir untuk pengajuan '{$protocol->title}' adalah: {$keputusanLabel[$request->keputusan]}.";
+            if ($request->keputusan === 'approved_with_recommendation') {
+                $message = "Sekretariat meminta perbaikan (Approved with Recommendation) untuk pengajuan '{$protocol->title}'. Mohon unggah revisi melalui halaman Riwayat Pengajuan Anda.";
+            } else {
+                $message = "Keputusan akhir untuk pengajuan '{$protocol->title}' adalah: {$keputusanLabel[$request->keputusan]}.";
+            }
 
             if ($request->catatan) {
                 $message .= " Catatan: {$request->catatan}";
@@ -213,5 +246,32 @@ class DecisionController extends Controller
         return redirect()
             ->route('sekretariat.decision.index')
             ->with('success', 'Keputusan berhasil disimpan.');
+    }
+
+    // Hitung jumlah reviewer unik yang sudah menyelesaikan review untuk protocol tertentu.
+    private function countCompletedUniqueReviewers(int $protocolId): int
+    {
+        $latestAssignmentIdsPerReviewer = ProtocolReviewer::where('protocol_id', $protocolId)
+            ->selectRaw('MAX(id) as id')
+            ->groupBy('reviewer_id')
+            ->pluck('id');
+
+        return ProtocolReviewer::whereIn('id', $latestAssignmentIdsPerReviewer)
+            ->where('status', 'done')
+            ->count();
+    }
+
+    // Cek apakah protocol sedang menunggu Peneliti mengunggah revisi
+    private function isMenungguRevisiPeneliti(Protocol $protocol, ?SekretariatDecision $existingDecision): bool
+    {
+        if (!$existingDecision || $existingDecision->keputusan !== 'approved_with_recommendation') {
+            return false;
+        }
+
+        $adaAssignmentBaruSetelahKeputusan = ProtocolReviewer::where('protocol_id', $protocol->id)
+            ->where('created_at', '>', $existingDecision->created_at)
+            ->exists();
+
+        return !$adaAssignmentBaruSetelahKeputusan;
     }
 }

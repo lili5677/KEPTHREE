@@ -110,14 +110,6 @@
                                     style="font-size:.8rem;padding:.45rem .75rem;">
                                         <i class="bi bi-eye"></i> Detail
                                     </a>
-
-                                    @if($review)
-                                        <a href="{{ route('reviewer.riwayat.edit', $assignment->id) }}"
-                                        class="btn-kep btn-primary"
-                                        style="font-size:.8rem;padding:.45rem .75rem;">
-                                            <i class="bi bi-pencil-square"></i> Edit
-                                        </a>
-                                    @endif
                                 </div>
                             </td>
                         </tr>

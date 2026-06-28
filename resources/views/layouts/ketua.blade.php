@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>@yield('title', 'Dashboard Reviewer') — KEPTHREE</title>
+    <title>@yield('title', 'Dashboard Ketua') — KEPTHREE</title>
 
     <link rel="icon" type="image/png" sizes="32x32" href="{{ asset('favicon-32x32.png') }}">
     <link rel="icon" type="image/png" sizes="16x16" href="{{ asset('favicon-16x16.png') }}">
@@ -16,13 +16,14 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
 
     <link href="{{ asset('css/peneliti.css') }}" rel="stylesheet">
-        <style>
+
+    <style>
         /* =========================================================
-        REVIEWER SIDEBAR THEME - DARK GREEN
+           KETUA SIDEBAR THEME - PURPLE
         ========================================================= */
 
         #sidebar {
-            background: linear-gradient(180deg, #0F2F26 0%, #164538 52%, #0B241D 100%) !important;
+            background: linear-gradient(180deg, #24113F 0%, #3B1E6D 52%, #1A0D33 100%) !important;
             border-right: 1px solid rgba(255, 255, 255, .08);
         }
 
@@ -31,8 +32,8 @@
         }
 
         #sidebar .brand-shield {
-            background: rgb(255 255 255) !important;
-            box-shadow: 0 8px 22px rgba(0, 0, 0, .22);
+            background: #FFFFFF !important;
+            box-shadow: 0 8px 22px rgba(0, 0, 0, .24);
         }
 
         #sidebar .brand-text .name {
@@ -40,19 +41,19 @@
         }
 
         #sidebar .brand-text .role {
-            color: #BFE7D4 !important;
+            color: #DDD6FE !important;
         }
 
         #sidebar .nav-section-label {
-            color: #8FC7AB !important;
+            color: #C4B5FD !important;
         }
 
         #sidebar .nav-item {
-            color: #DCEFE6 !important;
+            color: #EDE9FE !important;
         }
 
         #sidebar .nav-item i {
-            color: #BFE7D4 !important;
+            color: #DDD6FE !important;
         }
 
         #sidebar .nav-item:hover {
@@ -65,9 +66,9 @@
         }
 
         #sidebar .nav-item.active {
-            background: linear-gradient(135deg, #2F8F68 0%, #1F6F53 100%) !important;
+            background: linear-gradient(135deg, #7C3AED 0%, #6D28D9 100%) !important;
             color: #FFFFFF !important;
-            box-shadow: 0 10px 24px rgba(0, 0, 0, .22);
+            box-shadow: 0 10px 24px rgba(0, 0, 0, .24);
         }
 
         #sidebar .nav-item.active i {
@@ -76,7 +77,7 @@
 
         #sidebar .sidebar-toggle-btn,
         #sidebar .sidebar-expand-btn {
-            color: #DCEFE6 !important;
+            color: #EDE9FE !important;
             background: rgba(255, 255, 255, .10) !important;
         }
 
@@ -96,8 +97,8 @@
         }
 
         #sidebar .user-avatar {
-            background: #BFE7D4 !important;
-            color: #0F2F26 !important;
+            background: #DDD6FE !important;
+            color: #24113F !important;
         }
 
         #sidebar .user-info .u-name {
@@ -105,12 +106,12 @@
         }
 
         #sidebar .user-info .u-email {
-            color: #BFE7D4 !important;
+            color: #DDD6FE !important;
         }
 
         #sidebar .logout-btn {
             background: rgba(255, 255, 255, .10) !important;
-            color: #DCEFE6 !important;
+            color: #EDE9FE !important;
             border: 1px solid rgba(255, 255, 255, .10);
         }
 
@@ -123,9 +124,8 @@
             color: inherit !important;
         }
 
-        /* Mobile topbar reviewer accent */
         .topbar .sidebar-toggle-btn {
-            color: #0F2F26 !important;
+            color: #3B1E6D !important;
         }
     </style>
 
@@ -147,7 +147,7 @@
         </button>
 
         <div style="display:flex;align-items:center;gap:.6rem;">
-            <div style="width:32px;height:32px;background:#d0e3f0;border-radius:10px;
+            <div style="width:32px;height:32px;background:#ede9fe;border-radius:10px;
                         display:flex;align-items:center;justify-content:center;
                         box-shadow:0 2px 8px rgba(0,0,0,.15);overflow:hidden;flex-shrink:0;">
                 <img src="{{ asset('favicon-32x32.png') }}"
@@ -157,7 +157,7 @@
 
             <div style="display:flex;flex-direction:column;line-height:1.2;">
                 <span style="font-weight:600;font-size:.9rem;color:var(--navy-deep);">KEPTHREE</span>
-                <span style="font-size:.7rem;color:var(--text-muted);font-weight:500;">Reviewer</span>
+                <span style="font-size:.7rem;color:var(--text-muted);font-weight:500;">Ketua</span>
             </div>
         </div>
     </div>
@@ -175,7 +175,7 @@
 
             <div class="brand-text sidebar-brand-content">
                 <div class="name">KEPTHREE</div>
-                <div class="role">Reviewer</div>
+                <div class="role">Ketua</div>
             </div>
 
             <button class="sidebar-toggle-btn sidebar-brand-content"
@@ -195,25 +195,25 @@
         <nav class="sidebar-nav">
             <div class="nav-section-label">Menu Utama</div>
 
-            <a href="{{ route('reviewer.dashboard') }}"
-               class="nav-item {{ request()->routeIs('reviewer.dashboard') ? 'active' : '' }}"
+            <a href="{{ route('ketua.dashboard') }}"
+               class="nav-item {{ request()->routeIs('ketua.dashboard') ? 'active' : '' }}"
                data-tooltip="Dashboard">
                 <i class="bi bi-grid-1x2"></i>
                 <span class="nav-label">Dashboard</span>
             </a>
 
-            <a href="{{ route('reviewer.tugas.index') }}"
-               class="nav-item {{ request()->routeIs('reviewer.tugas.*') ? 'active' : '' }}"
-               data-tooltip="Tugas Review">
-                <i class="bi bi-clipboard-check"></i>
-                <span class="nav-label">Tugas Review</span>
+            <a href="{{ route('ketua.ske.index') }}"
+               class="nav-item {{ request()->routeIs('ketua.ske.*') ? 'active' : '' }}"
+               data-tooltip="Tanda Tangan SKE">
+                <i class="bi bi-pen"></i>
+                <span class="nav-label">Tanda Tangan SKE</span>
             </a>
 
-            <a href="{{ route('reviewer.riwayat') }}"
-               class="nav-item {{ request()->routeIs('reviewer.riwayat') ? 'active' : '' }}"
-               data-tooltip="Riwayat Review">
+            <a href="{{ route('ketua.riwayat') }}"
+               class="nav-item {{ request()->routeIs('ketua.riwayat*') ? 'active' : '' }}"
+               data-tooltip="Riwayat TTD">
                 <i class="bi bi-clock-history"></i>
-                <span class="nav-label">Riwayat Review</span>
+                <span class="nav-label">Riwayat TTD</span>
             </a>
         </nav>
 
@@ -260,7 +260,7 @@ const sidebar      = document.getElementById('sidebar');
 const bodyEl       = document.body;
 const collapseBtn  = document.getElementById('sidebarCollapseBtn');
 const expandBtn    = document.getElementById('sidebarExpandBtn');
-const COLLAPSE_KEY = 'kep_reviewer_sidebar_collapsed';
+const COLLAPSE_KEY = 'kep_ketua_sidebar_collapsed';
 
 function isMobile() {
     return window.innerWidth <= 768;
@@ -369,7 +369,7 @@ document.addEventListener('DOMContentLoaded', function () {
         title: 'Berhasil',
         text: "{{ session('success') }}",
         confirmButtonText: 'Oke',
-        confirmButtonColor: '#4A7FA7',
+        confirmButtonColor: '#7C3AED',
         timer: 10000,
         timerProgressBar: true
     });

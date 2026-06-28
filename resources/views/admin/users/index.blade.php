@@ -157,6 +157,10 @@
         color: #16a34a;
     }
 
+    .btn-warning {
+        color: #d97706;
+    }
+
     .action-divider {
         color: var(--border);
     }
@@ -168,9 +172,163 @@
     }
 
     .pagination-wrapper {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
         margin-top: 20px;
+        padding: 14px 16px;
+        border-top: 1px solid var(--border);
+        font-size: 13px;
+        color: var(--text-muted);
     }
 
+    .pagination-pages {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+    }
+
+    .pg-btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 32px;
+        height: 32px;
+        padding: 0 8px;
+        border: 1.5px solid var(--border);
+        border-radius: 7px;
+        font-size: 13px;
+        font-weight: 600;
+        font-family: var(--font);
+        text-decoration: none;
+        color: var(--text-primary);
+        background: #fff;
+        transition: all 0.12s;
+        cursor: pointer;
+    }
+
+    .pg-btn:hover {
+        background: #f3f4f6;
+    }
+
+    .pg-btn.active {
+        background: var(--accent);
+        border-color: var(--accent);
+        color: #fff;
+    }
+
+    .pg-btn.disabled {
+        color: #c9cdd8;
+        cursor: not-allowed;
+        pointer-events: none;
+    }
+
+         .modal-overlay {
+            position: fixed;
+            inset: 0;
+            z-index: 9999;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 24px;
+            background: rgba(15, 23, 42, 0.55);
+        }
+
+        .modal-overlay.active {
+            display: flex;
+        }
+
+        .modal-card {
+            width: 100%;
+            max-width: 500px;
+            background: #ffffff;
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            box-shadow: 0 20px 60px rgba(15, 23, 42, 0.25);
+            overflow: hidden;
+            position: relative;
+        }
+
+        .modal-header {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 16px;
+            padding: 20px 22px;
+            border-bottom: 1px solid var(--border);
+            background: #ffffff;
+        }
+
+        .modal-title {
+            margin: 0;
+            font-size: 18px;
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+
+        .modal-subtitle {
+            margin: 4px 0 0;
+            font-size: 13px;
+            color: var(--text-muted);
+        }
+
+        .modal-close {
+            width: 32px;
+            height: 32px;
+            border: none;
+            border-radius: 8px;
+            background: #f3f4f6;
+            color: var(--text-muted);
+            font-size: 20px;
+            cursor: pointer;
+        }
+
+        .modal-body {
+            padding: 20px 22px;
+            background: #ffffff;
+        }
+
+        .modal-footer {
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+            padding: 16px 22px;
+            border-top: 1px solid var(--border);
+            background: #ffffff;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            margin-bottom: 14px;
+        }
+
+        .form-group label {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .form-control {
+            width: 100%;
+            height: 40px;
+            padding: 0 12px;
+            border: 1.5px solid var(--border);
+            border-radius: 8px;
+            font-size: 13.5px;
+            font-family: var(--font);
+            color: var(--text-primary);
+            background: #ffffff;
+            outline: none;
+        }
+
+        .form-control:focus {
+            border-color: var(--accent);
+        }
+        
     @media (max-width: 768px) {
         .top-bar {
             flex-direction: column;
@@ -345,6 +503,17 @@
                                 </button>
 
                                 <span class="action-divider">|</span>
+                                    <button
+                                        type="button"
+                                        class="btn-action btn-warning"
+                                        data-user-id="{{ $user->id }}"
+                                        data-user-name="{{ e($user->name) }}"
+                                        onclick="openResetPasswordModalFromButton(this)"
+                                    >
+                                        Reset Password
+                                    </button>
+
+                                    <span class="action-divider">|</span>
 
                                 @if ($user->status === 'aktif')
                                     <form
@@ -388,14 +557,47 @@
     </div>
 
     @if ($users->hasPages())
+        @php
+            $users->appends(request()->query());
+        @endphp
+
         <div class="pagination-wrapper">
-            {{ $users->links() }}
+            <span>
+                Menampilkan {{ $users->firstItem() }}–{{ $users->lastItem() }}
+                dari {{ $users->total() }} user
+            </span>
+
+            <div class="pagination-pages">
+                {{-- Previous --}}
+                @if ($users->onFirstPage())
+                    <span class="pg-btn disabled">Previous</span>
+                @else
+                    <a href="{{ $users->previousPageUrl() }}" class="pg-btn">Previous</a>
+                @endif
+
+                {{-- Page numbers --}}
+                @foreach ($users->getUrlRange(max(1, $users->currentPage() - 2), min($users->lastPage(), $users->currentPage() + 2)) as $page => $url)
+                    @if ($page == $users->currentPage())
+                        <span class="pg-btn active">{{ $page }}</span>
+                    @else
+                        <a href="{{ $url }}" class="pg-btn">{{ $page }}</a>
+                    @endif
+                @endforeach
+
+                {{-- Next --}}
+                @if ($users->hasMorePages())
+                    <a href="{{ $users->nextPageUrl() }}" class="pg-btn">Next</a>
+                @else
+                    <span class="pg-btn disabled">Next</span>
+                @endif
+            </div>
         </div>
     @endif
 </div>
 
 @include('admin.users.modal_tambah')
 @include('admin.users.modal_edit')
+@include('admin.users.modal_reset_password')
 @endsection
 
 @push('scripts')
@@ -434,6 +636,27 @@
         openModal('modalEdit');
     }
 
+    function openResetPasswordModalFromButton(button) {
+        const id = button.dataset.userId;
+        const name = button.dataset.userName;
+
+        openResetPasswordModal(id, name);
+    }
+
+    function openResetPasswordModal(id, name) {
+        document.getElementById('resetUserId').value = id;
+        document.getElementById('resetUserNameInput').value = name;
+        document.getElementById('resetUserName').textContent = name;
+
+        document.getElementById('resetPassword').value = '';
+        document.getElementById('resetPasswordConfirmation').value = '';
+
+        document.getElementById('formResetPassword').action =
+            "{{ url('/admin/users') }}/" + id + "/reset-password";
+
+        openModal('modalResetPassword');
+    }
+
     const searchInput = document.querySelector('.search-input');
 
     if (searchInput) {
@@ -447,7 +670,17 @@
         });
     }
 
-    @if ($errors->any())
+    @if ($errors->resetPassword->any())
+        openModal('modalResetPassword');
+
+        @if (old('reset_user_id'))
+            document.getElementById('resetUserId').value = "{{ old('reset_user_id') }}";
+            document.getElementById('resetUserNameInput').value = "{{ old('reset_user_name') }}";
+            document.getElementById('resetUserName').textContent = "{{ old('reset_user_name', 'pengguna ini') }}";
+            document.getElementById('formResetPassword').action =
+                "{{ url('/admin/users') }}/{{ old('reset_user_id') }}/reset-password";
+        @endif
+    @elseif ($errors->any())
         openModal('modalTambah');
     @endif
 </script>

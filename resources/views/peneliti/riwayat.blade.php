@@ -13,7 +13,6 @@
     <form method="GET" action="{{ route('peneliti.riwayat') }}"
           style="display:flex;gap:.75rem;align-items:flex-end;flex-wrap:wrap;width:100%;">
 
-        {{-- Filter Status --}}
         <div class="filter-group">
             <label class="kep-label" style="font-size:.78rem;margin-bottom:.3rem;">
                 Filter Status
@@ -33,15 +32,13 @@
                     'disapproved'                  => 'Disapproved',
                     'issued'                       => 'Issued',
                 ] as $value => $label)
-                    <option value="{{ $value }}"
-                        {{ request('status') === $value ? 'selected' : '' }}>
+                    <option value="{{ $value }}" {{ request('status') === $value ? 'selected' : '' }}>
                         {{ $label }}
                     </option>
                 @endforeach
             </select>
         </div>
 
-        {{-- Filter Tahun --}}
         <div class="filter-group">
             <label class="kep-label" style="font-size:.78rem;margin-bottom:.3rem;">
                 Filter Tahun
@@ -49,8 +46,7 @@
             <select name="tahun" class="kep-select" style="width:130px;">
                 <option value="">Semua Tahun</option>
                 @foreach($availableYears as $year)
-                    <option value="{{ $year }}"
-                        {{ request('tahun') == $year ? 'selected' : '' }}>
+                    <option value="{{ $year }}" {{ request('tahun') == $year ? 'selected' : '' }}>
                         {{ $year }}
                     </option>
                 @endforeach
@@ -70,7 +66,6 @@
     </form>
 </div>
 
-{{-- ══ RESULT COUNT ════════════════════════════════════════════════ --}}
 @if(request()->hasAny(['status', 'tahun']))
     <p class="text-muted text-sm mb-3">
         Menampilkan <strong>{{ $protocols->total() }}</strong> pengajuan
@@ -84,7 +79,6 @@
     </p>
 @endif
 
-{{-- ══ LIST PROTOKOL ════════════════════════════════════════════════ --}}
 <div class="protocol-list">
 
 @forelse($protocols as $item)
@@ -122,15 +116,17 @@
             'on_review',
         ];
 
-        $badge      = $statusMap[$item->status] ?? ['class' => 'badge-new', 'label' => $item->status];
-        $tanggal    = $item->submitted_at?->translatedFormat('d M Y')
-                      ?? $item->created_at->translatedFormat('d M Y');
-        $hasDocumen = $item->documents->isNotEmpty();
+        $badge   = $statusMap[$item->status] ?? ['class' => 'badge-new', 'label' => $item->status];
+        $tanggal = $item->submitted_at?->translatedFormat('d M Y')
+                  ?? $item->created_at->translatedFormat('d M Y');
+
+        $ske = $item->skeDocument;
+        $showSkeButton = $ske && in_array($item->status, ['approved', 'issued']);
     @endphp
 
     <div class="protocol-item" id="protocol-{{ $item->id }}">
 
-        {{-- ── Kiri: info utama ────────────────────────────────── --}}
+        {{-- KIRI --}}
         <div style="flex:1;min-width:0;">
 
             <div class="protocol-meta" style="margin-bottom:.5rem;">
@@ -154,24 +150,27 @@
                 </span>
             </div>
 
+            @if($ske && in_array($item->status, ['approved', 'issued']))
+                <div class="ske-mini-status {{ 'ske-mini-' . $ske->status }}">
+                    <i class="bi bi-shield-check"></i>
+                    SKE:
+                    <strong>{{ $ske->statusLabel() }}</strong>
+                </div>
+            @endif
+
             {{-- Activity log --}}
             @if($item->status !== 'new_proposal')
                 <div style="margin-top:.6rem;">
                     <button type="button"
                             onclick="toggleActivity({{ $item->id }})"
-                            style="background:none;border:none;cursor:pointer;
-                                   color:var(--blue-accent);font-size:.78rem;
-                                   font-weight:600;padding:0;display:flex;
-                                   align-items:center;gap:.35rem;">
+                            class="activity-toggle">
                         <i class="bi bi-chevron-right"
                            id="chevron-{{ $item->id }}"
                            style="transition:transform .2s;font-size:.7rem;"></i>
                         Lihat Activity Log
                     </button>
 
-                    <div id="activity-{{ $item->id }}"
-                         style="display:none;margin-top:.6rem;padding-left:.5rem;
-                                border-left:2px solid var(--blue-light);">
+                    <div id="activity-{{ $item->id }}" class="activity-panel">
 
                         <div class="activity-entry">
                             <span class="activity-dot dot-done"></span>
@@ -203,12 +202,6 @@
 
                         @if($item->status === 'waiting_secretary_decision')
                             <div class="activity-entry">
-                                <span class="activity-dot dot-done"></span>
-                                <div>
-                                    <div class="activity-text">Dokumen lengkap dan masuk kategori Exempted</div>
-                                </div>
-                            </div>
-                            <div class="activity-entry">
                                 <span class="activity-dot dot-pending"></span>
                                 <div>
                                     <div class="activity-text">Menunggu keputusan sekretariat</div>
@@ -217,12 +210,6 @@
                         @endif
 
                         @if($item->status === 'ready_for_reviewer_assignment')
-                            <div class="activity-entry">
-                                <span class="activity-dot dot-done"></span>
-                                <div>
-                                    <div class="activity-text">Dokumen lengkap</div>
-                                </div>
-                            </div>
                             <div class="activity-entry">
                                 <span class="activity-dot dot-pending"></span>
                                 <div>
@@ -258,6 +245,15 @@
                             </div>
                         @endif
 
+                        @if($item->status === 'approved_with_recommendation')
+                            <div class="activity-entry">
+                                <span class="activity-dot dot-revision"></span>
+                                <div>
+                                    <div class="activity-text" style="color:#9a3412;">Disetujui dengan rekomendasi — revisi diperlukan</div>
+                                </div>
+                            </div>
+                        @endif
+
                         @if($item->status === 'revised')
                             <div class="activity-entry">
                                 <span class="activity-dot dot-done"></span>
@@ -267,7 +263,79 @@
                             </div>
                         @endif
 
-                        @if(in_array($item->status, ['approved', 'approved_with_recommendation', 'issued']))
+                        @if($ske && in_array($item->status, ['approved', 'issued']))
+                            @if($ske->status === 'menunggu_konfirmasi')
+                                <div class="activity-entry">
+                                    <span class="activity-dot dot-ske"></span>
+                                    <div>
+                                        <div class="activity-text" style="color:#1d4ed8;">SKE menunggu konfirmasi peneliti</div>
+                                        @if($ske->dikirim_ke_peneliti_at)
+                                            <div class="activity-time">
+                                                {{ $ske->dikirim_ke_peneliti_at->translatedFormat('d M Y, H:i') }} WIB
+                                            </div>
+                                        @endif
+                                    </div>
+                                </div>
+                            @endif
+
+                            @if($ske->status === 'revisi')
+                                <div class="activity-entry">
+                                    <span class="activity-dot dot-revision"></span>
+                                    <div>
+                                        <div class="activity-text" style="color:#9a3412;">SKE dikembalikan ke admin untuk diperbaiki</div>
+                                        @if($ske->direvisi_at)
+                                            <div class="activity-time">
+                                                {{ $ske->direvisi_at->translatedFormat('d M Y, H:i') }} WIB
+                                            </div>
+                                        @endif
+                                    </div>
+                                </div>
+                            @endif
+
+                            @if(in_array($ske->status, ['menunggu_ttd', 'sudah_ttd', 'terbit']))
+                                <div class="activity-entry">
+                                    <span class="activity-dot dot-ske"></span>
+                                    <div>
+                                        <div class="activity-text" style="color:#3730a3;">SKE diteruskan ke ketua untuk tanda tangan</div>
+                                        @if($ske->dikirim_ke_ketua_at)
+                                            <div class="activity-time">
+                                                {{ $ske->dikirim_ke_ketua_at->translatedFormat('d M Y, H:i') }} WIB
+                                            </div>
+                                        @endif
+                                    </div>
+                                </div>
+                            @endif
+
+                            @if(in_array($ske->status, ['sudah_ttd', 'terbit']))
+                                <div class="activity-entry">
+                                    <span class="activity-dot dot-approved"></span>
+                                    <div>
+                                        <div class="activity-text" style="color:#065f46;">SKE sudah ditandatangani ketua</div>
+                                        @if($ske->ditandatangani_at)
+                                            <div class="activity-time">
+                                                {{ $ske->ditandatangani_at->translatedFormat('d M Y, H:i') }} WIB
+                                            </div>
+                                        @endif
+                                    </div>
+                                </div>
+                            @endif
+
+                            @if($ske->status === 'terbit')
+                                <div class="activity-entry">
+                                    <span class="activity-dot dot-approved"></span>
+                                    <div>
+                                        <div class="activity-text" style="color:#065f46;">SKE telah diterbitkan</div>
+                                        @if($ske->diterbitkan_at)
+                                            <div class="activity-time">
+                                                {{ $ske->diterbitkan_at->translatedFormat('d M Y, H:i') }} WIB
+                                            </div>
+                                        @endif
+                                    </div>
+                                </div>
+                            @endif
+                        @endif
+
+                        @if(in_array($item->status, ['approved', 'issued']))
                             <div class="activity-entry">
                                 <span class="activity-dot dot-approved"></span>
                                 <div>
@@ -276,11 +344,11 @@
                             </div>
                         @endif
 
-                        @if(in_array($item->status, ['approved', 'approved_with_recommendation']))
+                        @if($item->status === 'approved' && !$ske)
                             <div class="activity-entry">
                                 <span class="activity-dot dot-pending"></span>
                                 <div>
-                                    <div class="activity-text">SKE sedang dibuat</div>
+                                    <div class="activity-text">Menunggu pembuatan SKE oleh admin</div>
                                 </div>
                             </div>
                         @endif
@@ -309,53 +377,30 @@
 
         </div>
 
-        {{-- ── Kanan: aksi ─────────────────────────────────────── --}}
-        <div class="d-flex gap-1 align-center" style="flex-shrink:0;">
+        {{-- KANAN: AKSI --}}
+        <div class="protocol-actions">
 
             <a href="{{ route('peneliti.riwayat.show', $item->id) }}" class="btn-detail">
                 <i class="bi bi-eye" style="font-size:.8rem;"></i>
                 Lihat Detail
             </a>
 
-            @if($item->status === 'revision_required')
-                <a href="#"
-                   class="btn-kep btn-primary"
-                   style="padding:.38rem .75rem;font-size:.78rem;"
+            @if(in_array($item->status, ['revision_required', 'approved_with_recommendation']) && !$item->sudah_kirim_revisi_menunggu_sekretaris)
+                <a href="{{ route('peneliti.revisi.show', $item->id) }}"
+                   class="btn-kep btn-primary btn-action-small"
                    title="Upload Revisi">
                     <i class="bi bi-upload" style="font-size:.78rem;"></i>
-                    <span class="d-none d-md-inline">Upload Revisi</span>
+                    Upload Revisi
                 </a>
             @endif
 
-            @if($hasDocumen)
-                <div class="dropdown-wrap" style="position:relative;">
-                    <button type="button"
-                            class="btn-kep btn-outline"
-                            style="padding:.38rem .75rem;font-size:.78rem;"
-                            title="Download Dokumen"
-                            onclick="toggleDropdown({{ $item->id }})">
-                        <i class="bi bi-download" style="font-size:.78rem;"></i>
-                    </button>
-                    <div id="dropdown-{{ $item->id }}"
-                         style="display:none;position:absolute;right:0;top:calc(100% + 4px);
-                                min-width:220px;background:var(--white);
-                                border:1px solid var(--border);border-radius:var(--radius-sm);
-                                box-shadow:var(--shadow-md);z-index:50;padding:.35rem 0;">
-                        @foreach($item->documents as $doc)
-                            <a href="{{ route('peneliti.riwayat.download', $doc->id) }}"
-                               class="dropdown-doc-item">
-                                <i class="bi bi-file-earmark-pdf" style="color:var(--blue-accent);font-size:.85rem;"></i>
-                                <span>{{ $doc->label }}</span>
-                            </a>
-                        @endforeach
-                    </div>
-                </div>
-            @else
-                <button class="btn-kep btn-outline"
-                        style="padding:.38rem .75rem;font-size:.78rem;opacity:.45;cursor:not-allowed;"
-                        disabled title="Belum ada dokumen">
-                    <i class="bi bi-download" style="font-size:.78rem;"></i>
-                </button>
+            @if($showSkeButton)
+                <a href="{{ route('peneliti.ske.show', $ske->id) }}"
+                   class="btn-kep btn-ske btn-action-small"
+                   title="Cek SKE">
+                    <i class="bi bi-shield-check" style="font-size:.78rem;"></i>
+                    Cek SKE
+                </a>
             @endif
 
         </div>
@@ -371,6 +416,7 @@
                 Belum ada pengajuan. Mulai buat pengajuan pertama Anda!
             @endif
         </p>
+
         @if(request()->hasAny(['status', 'tahun']))
             <a href="{{ route('peneliti.riwayat') }}" class="btn-kep btn-primary">
                 <i class="bi bi-x-circle"></i> Hapus Filter
@@ -385,7 +431,6 @@
 
 </div>
 
-{{-- ══ PAGINATION ══════════════════════════════════════════════════ --}}
 @if($protocols->hasPages())
     <div style="margin-top:1.5rem;">
         {{ $protocols->withQueryString()->links() }}
@@ -411,6 +456,7 @@
     text-decoration: none;
     transition: all var(--transition);
 }
+
 .btn-reset-filter:hover {
     background: #dc2626;
     border-color: #dc2626;
@@ -436,6 +482,95 @@
     color: var(--text-muted);
 }
 
+.protocol-actions {
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: .45rem;
+    flex-wrap: wrap;
+}
+
+.btn-action-small {
+    padding: .38rem .75rem !important;
+    font-size: .78rem !important;
+}
+
+.btn-ske {
+    background: #2563eb;
+    color: #fff;
+    border: 1px solid #2563eb;
+}
+
+.btn-ske:hover {
+    background: #1d4ed8;
+    border-color: #1d4ed8;
+    color: #fff;
+}
+
+.ske-mini-status {
+    display: inline-flex;
+    align-items: center;
+    gap: .35rem;
+    margin-top: .55rem;
+    padding: .32rem .65rem;
+    border-radius: 999px;
+    background: #eff6ff;
+    color: #1d4ed8;
+    border: 1px solid #bfdbfe;
+    font-size: .76rem;
+    font-weight: 600;
+}
+
+.ske-mini-status i {
+    font-size: .8rem;
+}
+
+.ske-mini-menunggu_konfirmasi {
+    background: #eff6ff;
+    color: #1d4ed8;
+    border-color: #bfdbfe;
+}
+
+.ske-mini-revisi {
+    background: #fff7ed;
+    color: #9a3412;
+    border-color: #fed7aa;
+}
+
+.ske-mini-menunggu_ttd {
+    background: #eef2ff;
+    color: #3730a3;
+    border-color: #c7d2fe;
+}
+
+.ske-mini-sudah_ttd,
+.ske-mini-terbit {
+    background: #ecfdf5;
+    color: #047857;
+    border-color: #a7f3d0;
+}
+
+.activity-toggle {
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: var(--blue-accent);
+    font-size: .78rem;
+    font-weight: 600;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    gap: .35rem;
+}
+
+.activity-panel {
+    display: none;
+    margin-top: .6rem;
+    padding-left: .5rem;
+    border-left: 2px solid var(--blue-light);
+}
+
 .activity-entry {
     display: flex;
     align-items: flex-start;
@@ -443,44 +578,55 @@
     padding: .3rem 0;
     font-size: .78rem;
 }
+
 .activity-dot {
-    width: 8px; height: 8px;
+    width: 8px;
+    height: 8px;
     border-radius: 50%;
     flex-shrink: 0;
     margin-top: .28rem;
 }
+
 .dot-done     { background: #10b981; }
 .dot-revision { background: #f97316; }
 .dot-approved { background: #059669; }
 .dot-rejected { background: #dc3545; }
 .dot-pending  { background: #d1d5db; border: 2px solid #9ca3af; }
+.dot-ske      { background: #2563eb; }
 
-.activity-text { color: var(--navy-deep); font-weight: 500; line-height: 1.3; }
-.activity-time { color: var(--text-muted); font-size: .72rem; margin-top: .1rem; }
-
-.dropdown-doc-item {
-    display: flex;
-    align-items: center;
-    gap: .6rem;
-    padding: .55rem 1rem;
-    font-size: .8rem;
+.activity-text {
     color: var(--navy-deep);
     font-weight: 500;
-    transition: background var(--transition);
-    white-space: nowrap;
-}
-.dropdown-doc-item:hover {
-    background: var(--blue-pale);
-    color: var(--blue-accent);
+    line-height: 1.3;
 }
 
-.flex-wrap { flex-wrap: wrap; }
+.activity-time {
+    color: var(--text-muted);
+    font-size: .72rem;
+    margin-top: .1rem;
+}
+
+.flex-wrap {
+    flex-wrap: wrap;
+}
+
+@media (max-width: 900px) {
+    .protocol-item {
+        align-items: flex-start;
+    }
+
+    .protocol-actions {
+        width: 100%;
+        justify-content: flex-start;
+    }
+}
 
 @media (max-width: 640px) {
-    .d-none.d-md-inline { display: none !important; }
-}
-@media (min-width: 641px) {
-    .d-none.d-md-inline { display: inline !important; }
+    .protocol-actions .btn-kep,
+    .protocol-actions .btn-detail {
+        padding: .38rem .65rem !important;
+        font-size: .76rem !important;
+    }
 }
 </style>
 @endpush
@@ -490,25 +636,11 @@
 function toggleActivity(id) {
     const panel   = document.getElementById('activity-' + id);
     const chevron = document.getElementById('chevron-' + id);
-    const open    = panel.style.display === 'none';
-    panel.style.display     = open ? 'block' : 'none';
+
+    const open = panel.style.display === 'none';
+
+    panel.style.display = open ? 'block' : 'none';
     chevron.style.transform = open ? 'rotate(90deg)' : 'rotate(0deg)';
 }
-
-function toggleDropdown(id) {
-    document.querySelectorAll('[id^="dropdown-"]').forEach(function (el) {
-        if (el.id !== 'dropdown-' + id) el.style.display = 'none';
-    });
-    const dd = document.getElementById('dropdown-' + id);
-    dd.style.display = dd.style.display === 'none' ? 'block' : 'none';
-}
-
-document.addEventListener('click', function (e) {
-    if (!e.target.closest('.dropdown-wrap')) {
-        document.querySelectorAll('[id^="dropdown-"]').forEach(function (el) {
-            el.style.display = 'none';
-        });
-    }
-});
 </script>
 @endpush
