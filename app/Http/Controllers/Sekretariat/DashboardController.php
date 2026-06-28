@@ -6,47 +6,51 @@ use App\Http\Controllers\Controller;
 use App\Models\Protocol;
 use App\Models\ProtocolReviewer;
 use App\Models\Review;
-use App\Models\SekretariatDecision;
-use Carbon\Carbon;
 use Illuminate\Support\Collection;
 
 class DashboardController extends Controller
 {
     public function index()
     {
+        $sekretariatId = auth()->id();
+
         /*
          * Statistik utama dashboard sekretariat
          */
-        $menungguVerifikasi = Protocol::whereIn('status', [
-            'new_proposal',
-            'assigned_to_secretary',
-            'revision_required',
-        ])->count();
+        $menungguVerifikasi = Protocol::where('sekretariat_id', $sekretariatId)
+            ->whereIn('status', [
+                'assigned_to_secretary',
+                'revision_required',
+            ])
+            ->count();
 
-        $sedangOnReview = Protocol::whereIn('status', [
-            'on_review',
-            'under_review',
-            'in_review',
-            'review',
-        ])->count();
+        $sedangOnReview = Protocol::where('sekretariat_id', $sekretariatId)
+            ->whereIn('status', [
+                'on_review',
+                'under_review',
+                'in_review',
+                'review',
+            ])
+            ->count();
 
-        $perluKeputusan = $this->countPerluKeputusan();
+        $perluKeputusan = $this->countPerluKeputusan($sekretariatId);
 
-        $selesaiBulanIni = Protocol::whereIn('status', [
-            'approved',
-            'disapproved',
-            'rejected',
-        ])
+        $selesaiBulanIni = Protocol::where('sekretariat_id', $sekretariatId)
+            ->whereIn('status', [
+                'approved',
+                'disapproved',
+                'rejected',
+            ])
             ->whereMonth('updated_at', now()->month)
             ->whereYear('updated_at', now()->year)
             ->count();
 
         /*
-         * Proposal Prioritas
+         * Proposal Prioritas - Verifikasi
          */
         $prioritasVerifikasi = Protocol::with(['user', 'latestRevision'])
+            ->where('sekretariat_id', $sekretariatId)
             ->whereIn('status', [
-                'new_proposal',
                 'assigned_to_secretary',
                 'revision_required',
             ])
@@ -61,7 +65,10 @@ class DashboardController extends Controller
                 return $protocol;
             });
 
-        $prioritasKeputusan = $this->getPrioritasKeputusan()
+        /*
+         * Proposal Prioritas - Keputusan
+         */
+        $prioritasKeputusan = $this->getPrioritasKeputusan($sekretariatId)
             ->take(5)
             ->map(function ($protocol) {
                 $protocol->action_label = 'Secretary Decision';
@@ -81,6 +88,7 @@ class DashboardController extends Controller
          * Review Progress
          */
         $reviewProgress = Protocol::with(['user'])
+            ->where('sekretariat_id', $sekretariatId)
             ->whereIn('status', [
                 'on_review',
                 'under_review',
@@ -121,18 +129,19 @@ class DashboardController extends Controller
         ));
     }
 
-    private function countPerluKeputusan(): int
+    private function countPerluKeputusan(int $sekretariatId): int
     {
-        return $this->getPrioritasKeputusan()->count();
+        return $this->getPrioritasKeputusan($sekretariatId)->count();
     }
 
-    private function getPrioritasKeputusan(): Collection
+    private function getPrioritasKeputusan(int $sekretariatId): Collection
     {
         $protocolIds = Review::whereNotNull('reviewed_at')
             ->pluck('protocol_id')
             ->unique();
 
         return Protocol::with(['user', 'verification', 'latestSekretariatDecision'])
+            ->where('sekretariat_id', $sekretariatId)
             ->whereIn('id', $protocolIds)
             ->whereHas('verification', function ($query) {
                 $query->whereIn('review_type', ['expedited', 'full_board']);

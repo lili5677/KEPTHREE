@@ -28,7 +28,8 @@ class DecisionController extends Controller
             ->pluck('protocol_id')
             ->unique();
 
-        $query = Protocol::whereIn('id', $protocolIds)
+        $query = Protocol::where('sekretariat_id', Auth::id())
+            ->whereIn('id', $protocolIds)
             ->with(['user', 'verification', 'latestSekretariatDecision']);
 
         if ($filterReviewType) {
@@ -87,7 +88,18 @@ class DecisionController extends Controller
      */
     public function show(Protocol $protocol)
     {
-        $protocol->load(['user', 'verification', 'documents', 'revisions', 'latestSekretariatDecision', 'sekretariatDecisions.sekretariat']);
+        if ((int) $protocol->sekretariat_id !== (int) Auth::id()) {
+            abort(403, 'Proposal ini bukan tugas sekretariat Anda.');
+        }
+
+        $protocol->load([
+            'user',
+            'verification',
+            'documents',
+            'revisions',
+            'latestSekretariatDecision',
+            'sekretariatDecisions.sekretariat'
+        ]);
 
         $reviewType = $protocol->verification->review_type ?? null;
 
@@ -116,19 +128,21 @@ class DecisionController extends Controller
 
         $minReviewer = $reviewType === 'full_board' ? 5 : 3;
 
-        // Histori keputusan sekretariat babak sebelumnya (jika ini babak ke-2+)
+        // Histori keputusan sekretariat babak sebelumnya
         $decisionHistory = $protocol->sekretariatDecisions;
         $existingDecision = $decisionHistory->first();
 
-        // Apakah protocol ini sedang dalam babak revisi (sudah pernah Approved with Recommendation)?
-        $isRevisionRound = $decisionHistory->where('keputusan', 'approved_with_recommendation')->isNotEmpty();
+        // Apakah protocol ini sedang dalam babak revisi
+        $isRevisionRound = $decisionHistory
+            ->where('keputusan', 'approved_with_recommendation')
+            ->isNotEmpty();
 
         $menungguRevisiPeneliti = $this->isMenungguRevisiPeneliti($protocol, $existingDecision);
 
         $isComplete = $totalReviewers > 0
             && $completedReviews == $totalReviewers
             && $completedReviews >= $minReviewer
-            && !$menungguRevisiPeneliti;
+            && ! $menungguRevisiPeneliti;
 
         return view('sekretariat.decision.show', compact(
             'protocol',
@@ -150,11 +164,15 @@ class DecisionController extends Controller
      */
     public function store(Request $request, Protocol $protocol)
     {
+        if ((int) $protocol->sekretariat_id !== (int) Auth::id()) {
+            abort(403, 'Proposal ini bukan tugas sekretariat Anda.');
+        }
+
         $protocol->load(['user', 'verification']);
 
         $reviewType = $protocol->verification->review_type ?? null;
 
-        if (!in_array($reviewType, ['expedited', 'full_board'])) {
+        if (! in_array($reviewType, ['expedited', 'full_board'])) {
             return back()->with('error', 'Protocol ini tidak memerlukan Secretary Decision.');
         }
 
@@ -189,7 +207,7 @@ class DecisionController extends Controller
 
         DB::transaction(function () use ($request, $protocol) {
 
-            // Babak keputusan sekretariat berikutnya (tidak menimpa histori sebelumnya)
+            // Babak keputusan sekretariat berikutnya
             $nextRound = SekretariatDecision::where('protocol_id', $protocol->id)->max('round') + 1;
 
             SekretariatDecision::create([
@@ -248,7 +266,9 @@ class DecisionController extends Controller
             ->with('success', 'Keputusan berhasil disimpan.');
     }
 
-    // Hitung jumlah reviewer unik yang sudah menyelesaikan review untuk protocol tertentu.
+    /**
+     * Hitung jumlah reviewer unik yang sudah menyelesaikan review untuk protocol tertentu.
+     */
     private function countCompletedUniqueReviewers(int $protocolId): int
     {
         $latestAssignmentIdsPerReviewer = ProtocolReviewer::where('protocol_id', $protocolId)
@@ -261,10 +281,12 @@ class DecisionController extends Controller
             ->count();
     }
 
-    // Cek apakah protocol sedang menunggu Peneliti mengunggah revisi
+    /**
+     * Cek apakah protocol sedang menunggu Peneliti mengunggah revisi.
+     */
     private function isMenungguRevisiPeneliti(Protocol $protocol, ?SekretariatDecision $existingDecision): bool
     {
-        if (!$existingDecision || $existingDecision->keputusan !== 'approved_with_recommendation') {
+        if (! $existingDecision || $existingDecision->keputusan !== 'approved_with_recommendation') {
             return false;
         }
 
@@ -272,6 +294,6 @@ class DecisionController extends Controller
             ->where('created_at', '>', $existingDecision->created_at)
             ->exists();
 
-        return !$adaAssignmentBaruSetelahKeputusan;
+        return ! $adaAssignmentBaruSetelahKeputusan;
     }
 }

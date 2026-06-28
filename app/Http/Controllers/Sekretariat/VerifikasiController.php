@@ -17,12 +17,13 @@ class VerifikasiController extends Controller
 {
     public function index()
     {
-        $protocols = Protocol::whereIn('status', [
-            'new_proposal',
-            'assigned_to_secretary',
-            'revision_required',
-        ])
+        $protocols = Protocol::where('sekretariat_id', Auth::id())
+            ->whereIn('status', [
+                'assigned_to_secretary',
+                'revision_required',
+            ])
             ->with(['user', 'latestRevision'])
+            ->latest('updated_at')
             ->get();
 
         return view('sekretariat.verifikasi.index', compact('protocols'));
@@ -30,6 +31,10 @@ class VerifikasiController extends Controller
 
     public function show(Protocol $protocol)
     {
+        if ((int) $protocol->sekretariat_id !== (int) Auth::id()) {
+            abort(403, 'Proposal ini bukan tugas sekretariat Anda.');
+        }
+
         $documents = $protocol->documents;
 
         $reviewers = User::role('reviewer')->get();
@@ -46,6 +51,9 @@ class VerifikasiController extends Controller
 
     public function check(Request $request, Protocol $protocol)
     {
+        if ((int) $protocol->sekretariat_id !== (int) Auth::id()) {
+            abort(403, 'Proposal ini bukan tugas sekretariat Anda.');
+        }
         $request->validate([
             'action' => 'required|in:lengkap,tidak_lengkap',
             'review_type' => 'required_if:action,lengkap|nullable|in:exempted,expedited,full_board',

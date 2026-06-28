@@ -12,39 +12,46 @@ use Illuminate\Support\Facades\DB;
 class ReviewerManagementController extends Controller
 {
     public function index()
-{
-    $protocols = Protocol::with([
-            'user',
-            'verification',
-        ])
-        ->where('status', 'on_review')
-        ->latest('updated_at')
-        ->get()
-        ->map(function ($protocol) {
-            $assignments = ProtocolReviewer::with('reviewer')
-                ->where('protocol_id', $protocol->id)
-                ->orderBy('id')
-                ->get();
+    {
+        $protocols = Protocol::with([
+                'user',
+                'verification',
+            ])
+            ->where('sekretariat_id', auth()->id())
+            ->where('status', 'on_review')
+            ->latest('updated_at')
+            ->get()
+            ->map(function ($protocol) {
+                $assignments = ProtocolReviewer::with('reviewer')
+                    ->where('protocol_id', $protocol->id)
+                    ->orderBy('id')
+                    ->get();
 
-            $deadline = $assignments->max('deadline');
-            $deadlineDate = $deadline ? \Carbon\Carbon::parse($deadline)->endOfDay() : null;
+                $deadline = $assignments->max('deadline');
+                $deadlineDate = $deadline
+                    ? \Carbon\Carbon::parse($deadline)->endOfDay()
+                    : null;
 
-            $totalReviewers = $assignments->count();
-            $completedReviewers = $assignments->where('status', 'done')->count();
+                $totalReviewers = $assignments->count();
+                $completedReviewers = $assignments->where('status', 'done')->count();
 
-            $protocol->assigned_reviewers = $assignments;
-            $protocol->review_deadline = $deadline;
-            $protocol->review_progress = $completedReviewers . '/' . $totalReviewers;
-            $protocol->deadline_passed = $deadlineDate ? now()->greaterThan($deadlineDate) : false;
+                $protocol->assigned_reviewers = $assignments;
+                $protocol->review_deadline = $deadline;
+                $protocol->review_progress = $completedReviewers . '/' . $totalReviewers;
+                $protocol->deadline_passed = $deadlineDate ? now()->greaterThan($deadlineDate) : false;
 
-            return $protocol;
-        });
+                return $protocol;
+            });
 
-    return view('sekretariat.review.index', compact('protocols'));
-}
+        return view('sekretariat.review.index', compact('protocols'));
+    }
 
     public function edit(Protocol $protocol)
     {
+        if ((int) $protocol->sekretariat_id !== (int) auth()->id()) {
+            abort(403, 'Proposal ini bukan tugas sekretariat Anda.');
+        }
+
         $protocol->load(['user', 'verification']);
 
         $assignments = ProtocolReviewer::with('reviewer')
@@ -63,7 +70,10 @@ class ReviewerManagementController extends Controller
             ->get();
 
         $deadline = $assignments->max('deadline');
-        $deadlinePassed = $deadline ? now()->greaterThan($deadline) : false;
+
+        $deadlinePassed = $deadline
+            ? now()->greaterThan(\Carbon\Carbon::parse($deadline)->endOfDay())
+            : false;
 
         /*
          * Rule:
@@ -93,6 +103,10 @@ class ReviewerManagementController extends Controller
 
     public function update(Request $request, Protocol $protocol)
     {
+        if ((int) $protocol->sekretariat_id !== (int) auth()->id()) {
+            abort(403, 'Proposal ini bukan tugas sekretariat Anda.');
+        }
+
         $assignments = ProtocolReviewer::where('protocol_id', $protocol->id)
             ->orderBy('id')
             ->get();
@@ -108,7 +122,11 @@ class ReviewerManagementController extends Controller
         $requiredReviewerCount = $protocol->verification?->review_type === 'full_board' ? 5 : 3;
 
         $deadline = $assignments->max('deadline');
-        $deadlinePassed = $deadline ? now()->greaterThan($deadline) : false;
+
+        $deadlinePassed = $deadline
+            ? now()->greaterThan(\Carbon\Carbon::parse($deadline)->endOfDay())
+            : false;
+
         $hasSubmittedReview = $assignments->where('status', 'done')->count() > 0;
 
         $request->validate([

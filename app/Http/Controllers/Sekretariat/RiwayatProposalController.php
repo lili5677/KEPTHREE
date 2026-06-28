@@ -11,16 +11,19 @@ class RiwayatProposalController extends Controller
 {
     public function index(Request $request)
     {
+        $sekretariatId = auth()->id();
+
         $search = $request->get('search');
         $type = $request->get('type');
 
         $logs = DB::table('activity_logs')
             ->leftJoin('users', 'activity_logs.user_id', '=', 'users.id')
-            ->leftJoin('protocols', function ($join) {
+            ->join('protocols', function ($join) {
                 $join->on('activity_logs.subject_id', '=', 'protocols.id')
                     ->where('activity_logs.subject_type', '=', Protocol::class);
             })
             ->where('activity_logs.subject_type', Protocol::class)
+            ->where('protocols.sekretariat_id', $sekretariatId)
             ->when($type, function ($query) use ($type) {
                 $query->where('activity_logs.type', $type);
             })
@@ -49,11 +52,16 @@ class RiwayatProposalController extends Controller
             ->withQueryString();
 
         $typeOptions = DB::table('activity_logs')
-            ->where('subject_type', Protocol::class)
-            ->whereNotNull('type')
+            ->join('protocols', function ($join) {
+                $join->on('activity_logs.subject_id', '=', 'protocols.id')
+                    ->where('activity_logs.subject_type', '=', Protocol::class);
+            })
+            ->where('activity_logs.subject_type', Protocol::class)
+            ->where('protocols.sekretariat_id', $sekretariatId)
+            ->whereNotNull('activity_logs.type')
             ->distinct()
-            ->orderBy('type')
-            ->pluck('type');
+            ->orderBy('activity_logs.type')
+            ->pluck('activity_logs.type');
 
         return view('sekretariat.riwayat.index', compact(
             'logs',
