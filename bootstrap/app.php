@@ -16,6 +16,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'admin'    => \App\Http\Middleware\CheckRoleAdmin::class,
             'reviewer' => \App\Http\Middleware\CheckRoleReviewer::class,
             'ketua'    => \App\Http\Middleware\CheckRoleKetua::class,
+            'sekretariat'    => \App\Http\Middleware\CheckRoleSekretariat::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {

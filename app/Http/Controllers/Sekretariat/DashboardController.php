@@ -4,64 +4,111 @@ namespace App\Http\Controllers\Sekretariat;
 
 use App\Http\Controllers\Controller;
 use App\Models\Protocol;
-use Illuminate\Support\Facades\Auth;
+use App\Models\ProtocolReviewer;
+use App\Models\Review;
+use App\Models\SekretariatDecision;
+use Carbon\Carbon;
+use Illuminate\Support\Collection;
 
 class DashboardController extends Controller
 {
     public function index()
     {
-        // ========== 1. STATISTIK KARTU ==========
-        $menungguVerifikasi = Protocol::where('status', 'new_proposal')->count();
-        $sedangOnReview = Protocol::where('status', 'on_review')->count();
-        $perluKeputusan = Protocol::where('status', 'waiting_secretary_decision')->count();
-        $selesaiBulanIni = Protocol::whereIn('status', ['approved', 'issued'])
+        /*
+         * Statistik utama dashboard sekretariat
+         */
+        $menungguVerifikasi = Protocol::whereIn('status', [
+            'new_proposal',
+            'assigned_to_secretary',
+            'revision_required',
+        ])->count();
+
+        $sedangOnReview = Protocol::whereIn('status', [
+            'on_review',
+            'under_review',
+            'in_review',
+            'review',
+        ])->count();
+
+        $perluKeputusan = $this->countPerluKeputusan();
+
+        $selesaiBulanIni = Protocol::whereIn('status', [
+            'approved',
+            'disapproved',
+            'rejected',
+        ])
             ->whereMonth('updated_at', now()->month)
+            ->whereYear('updated_at', now()->year)
             ->count();
 
-        // ========== 2. PROPOSAL PRIORITAS ==========
-        // Ambil proposal yang butuh aksi sekretaris, urut dari terbaru, batasi 3
-        $prioritas = Protocol::whereIn('status', ['new_proposal', 'assigned_to_secretary', 'waiting_secretary_decision'])
-            ->orderBy('created_at', 'desc')
-            ->take(3)
+        /*
+         * Proposal Prioritas
+         */
+        $prioritasVerifikasi = Protocol::with(['user', 'latestRevision'])
+            ->whereIn('status', [
+                'new_proposal',
+                'assigned_to_secretary',
+                'revision_required',
+            ])
+            ->latest('updated_at')
+            ->take(5)
             ->get()
             ->map(function ($protocol) {
-                // Tentukan label aksi berdasarkan status
-                if (in_array($protocol->status, ['new_proposal', 'assigned_to_secretary'])) {
-                    $protocol->action_label = 'Verifikasi Dokumen';
-                } elseif ($protocol->status == 'waiting_secretary_decision') {
-                    $protocol->action_label = 'Secretary Decision';
-                } else {
-                    $protocol->action_label = 'Assign Reviewer';
-                }
-                
-                // Hitung deadline terdekat (jika ada review)
+                $protocol->action_label = 'Verifikasi Dokumen';
                 $protocol->deadline_display = null;
-                if ($protocol->reviews && $protocol->reviews->isNotEmpty()) {
-                    $nearestDeadline = $protocol->reviews->whereNull('submitted_at')->min('deadline');
-                    if ($nearestDeadline) {
-                        $protocol->deadline_display = \Carbon\Carbon::parse($nearestDeadline)->diffForHumans();
-                    }
-                }
-                
+                $protocol->protocol_number = $protocol->nomor_registrasi ?? 'PRO-' . $protocol->id;
+
                 return $protocol;
             });
 
-        // ========== 3. REVIEW PROGRESS ==========
-        $reviewProgress = Protocol::where('status', 'on_review')
-            ->with('reviews')
-            ->take(3)
+        $prioritasKeputusan = $this->getPrioritasKeputusan()
+            ->take(5)
+            ->map(function ($protocol) {
+                $protocol->action_label = 'Secretary Decision';
+                $protocol->deadline_display = null;
+                $protocol->protocol_number = $protocol->nomor_registrasi ?? 'PRO-' . $protocol->id;
+
+                return $protocol;
+            });
+
+        $prioritas = $prioritasVerifikasi
+            ->merge($prioritasKeputusan)
+            ->sortByDesc('updated_at')
+            ->take(6)
+            ->values();
+
+        /*
+         * Review Progress
+         */
+        $reviewProgress = Protocol::with(['user'])
+            ->whereIn('status', [
+                'on_review',
+                'under_review',
+                'in_review',
+                'review',
+            ])
+            ->latest('updated_at')
+            ->take(6)
             ->get()
             ->map(function ($protocol) {
-                $total = $protocol->reviews->count();
-                $selesai = $protocol->reviews->whereNotNull('submitted_at')->count();
-                $sisa = $total - $selesai;
-                
-                return (object) [
-                    'id' => $protocol->id,
-                    'judul' => $protocol->title,
-                    'progress' => $total > 0 ? "$selesai/$total" : "0/0",
-                    'status_text' => $sisa > 0 ? "$sisa reviewer belum selesai" : "Review lengkap - siap keputusan"
-                ];
+                $totalReviewers = ProtocolReviewer::where('protocol_id', $protocol->id)
+                    ->distinct('reviewer_id')
+                    ->count('reviewer_id');
+
+                $completedReviews = $this->countCompletedUniqueReviewers($protocol->id);
+
+                $protocol->judul = $protocol->title;
+                $protocol->progress = $completedReviews . '/' . $totalReviewers;
+
+                if ($totalReviewers <= 0) {
+                    $protocol->status_text = 'Belum ada reviewer yang ditugaskan.';
+                } elseif ($completedReviews >= $totalReviewers) {
+                    $protocol->status_text = 'Semua reviewer telah menyelesaikan review.';
+                } else {
+                    $protocol->status_text = 'Menunggu ' . max($totalReviewers - $completedReviews, 0) . ' reviewer lagi.';
+                }
+
+                return $protocol;
             });
 
         return view('dashboard.sekretariat', compact(
@@ -72,5 +119,63 @@ class DashboardController extends Controller
             'prioritas',
             'reviewProgress'
         ));
+    }
+
+    private function countPerluKeputusan(): int
+    {
+        return $this->getPrioritasKeputusan()->count();
+    }
+
+    private function getPrioritasKeputusan(): Collection
+    {
+        $protocolIds = Review::whereNotNull('reviewed_at')
+            ->pluck('protocol_id')
+            ->unique();
+
+        return Protocol::with(['user', 'verification', 'latestSekretariatDecision'])
+            ->whereIn('id', $protocolIds)
+            ->whereHas('verification', function ($query) {
+                $query->whereIn('review_type', ['expedited', 'full_board']);
+            })
+            ->get()
+            ->filter(function ($protocol) {
+                $latestDecision = $protocol->latestSekretariatDecision;
+
+                if ($latestDecision && in_array($latestDecision->keputusan, ['approved', 'rejected'])) {
+                    return false;
+                }
+
+                if ($latestDecision && $latestDecision->keputusan === 'approved_with_recommendation') {
+                    $adaAssignmentBaruSetelahKeputusan = ProtocolReviewer::where('protocol_id', $protocol->id)
+                        ->where('created_at', '>', $latestDecision->created_at)
+                        ->exists();
+
+                    if (!$adaAssignmentBaruSetelahKeputusan) {
+                        return false;
+                    }
+                }
+
+                $totalReviewers = ProtocolReviewer::where('protocol_id', $protocol->id)
+                    ->distinct('reviewer_id')
+                    ->count('reviewer_id');
+
+                $completedReviews = $this->countCompletedUniqueReviewers($protocol->id);
+
+                return $totalReviewers > 0 && $completedReviews >= $totalReviewers;
+            })
+            ->sortByDesc('updated_at')
+            ->values();
+    }
+
+    private function countCompletedUniqueReviewers(int $protocolId): int
+    {
+        $latestAssignmentIdsPerReviewer = ProtocolReviewer::where('protocol_id', $protocolId)
+            ->selectRaw('MAX(id) as id')
+            ->groupBy('reviewer_id')
+            ->pluck('id');
+
+        return ProtocolReviewer::whereIn('id', $latestAssignmentIdsPerReviewer)
+            ->where('status', 'done')
+            ->count();
     }
 }
