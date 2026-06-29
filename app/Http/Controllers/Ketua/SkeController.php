@@ -75,9 +75,14 @@ class SkeController extends Controller
 
         $file = $request->file('signed_file');
 
-        $fileName = 'SKE-TTD-' . $ske->id . '-' . now()->format('YmdHis') . '.' . $file->getClientOriginalExtension();
+        // Baca isi file
+        $contents = file_get_contents($file->getPathname());
 
-        $path = $file->storeAs('ske/signed', $fileName, 'public');
+        // Tentukan nama dan lokasi file
+        $path = 'ske/signed/SKE-TTD-' . $ske->id . '-' . now()->format('YmdHis') . '.' . $file->getClientOriginalExtension();
+
+        // Simpan ke storage
+        Storage::disk('public')->put($path, $contents);
 
         DB::transaction(function () use ($ske, $path) {
             $ske->update([
