@@ -52,7 +52,6 @@ class DokumenController extends Controller
 
     public function download(Protocol $protocol)
     {
-        // Zip semua dokumen protokol ini
         $documents = $protocol->documents;
 
         if ($documents->isEmpty()) {
@@ -62,32 +61,80 @@ class DokumenController extends Controller
         // Jika hanya 1 dokumen, langsung download
         if ($documents->count() === 1) {
             $doc = $documents->first();
-            if (!Storage::disk('public')->exists($doc->file_path)) {
+
+            if (!Storage::disk('local')->exists($doc->file_path)) {
                 return back()->with('error', 'File tidak ditemukan.');
             }
-            return Storage::disk('public')->download($doc->file_path, $doc->name);
+
+            return Storage::disk('local')->download($doc->file_path, $doc->name);
         }
 
         // Lebih dari 1: buat zip
-        $zipName  = 'dokumen_' . ($protocol->nomor_registrasi ?? 'PRO-'.$protocol->id) . '.zip';
-        $zipPath  = storage_path('app/temp/' . $zipName);
-
-        if (!file_exists(storage_path('app/temp'))) {
-            mkdir(storage_path('app/temp'), 0755, true);
+        $tempDir = storage_path('app/temp');
+        if (!file_exists($tempDir)) {
+            mkdir($tempDir, 0755, true);
         }
 
+        $kodeAman = preg_replace(
+            '/[^A-Za-z0-9_-]+/',
+            '-',
+            $protocol->nomor_registrasi ?? 'PRO-' . $protocol->id
+        );
+        $kodeAman = trim($kodeAman, '-');
+
+        $baseName = 'dokumen_' . $kodeAman . '.zip';
+        // Nama file fisik dibuat unik supaya tidak collision saat ada download bersamaan
+        $zipFileName = 'dokumen_' . $kodeAman . '_' . uniqid() . '.zip';
+        $zipPath = $tempDir . '/' . $zipFileName;
+
         $zip = new \ZipArchive();
-        $zip->open($zipPath, \ZipArchive::CREATE | \ZipArchive::OVERWRITE);
+        $opened = $zip->open($zipPath, \ZipArchive::CREATE | \ZipArchive::OVERWRITE);
+
+        if ($opened !== true) {
+            // $opened berupa kode error ZipArchive (integer) kalau gagal,
+            // dicatat ke log supaya gampang didiagnosis kalau masih gagal lagi.
+            \Illuminate\Support\Facades\Log::error('Gagal membuka ZipArchive', [
+                'protocol_id' => $protocol->id,
+                'zip_path'    => $zipPath,
+                'error_code'  => $opened,
+            ]);
+
+            return back()->with('error', 'Gagal membuat file zip (kode: ' . $opened . '). Coba lagi.');
+        }
+
+        $addedCount = 0;
+        $usedNames  = [];
 
         foreach ($documents as $doc) {
-            $fullPath = Storage::disk('public')->path($doc->file_path);
-            if (file_exists($fullPath)) {
-                $zip->addFile($fullPath, $doc->name);
+            if (!Storage::disk('local')->exists($doc->file_path)) {
+                continue;
             }
+
+            $fullPath = Storage::disk('local')->path($doc->file_path);
+
+            // Hindari nama file ganda di dalam zip (mis. 2 dokumen bernama "Surat.pdf")
+            $entryName = $doc->name;
+            if (isset($usedNames[$entryName])) {
+                $usedNames[$entryName]++;
+                $ext  = pathinfo($entryName, PATHINFO_EXTENSION);
+                $base = pathinfo($entryName, PATHINFO_FILENAME);
+                $entryName = $base . ' (' . $usedNames[$entryName] . ')' . ($ext ? '.' . $ext : '');
+            } else {
+                $usedNames[$entryName] = 0;
+            }
+
+            $zip->addFile($fullPath, $entryName);
+            $addedCount++;
         }
 
         $zip->close();
 
-        return response()->download($zipPath, $zipName)->deleteFileAfterSend(true);
+        // Kalau ternyata tidak ada satupun file yang berhasil ditambahkan
+        if ($addedCount === 0) {
+            @unlink($zipPath);
+            return back()->with('error', 'File dokumen tidak ditemukan di server.');
+        }
+
+        return response()->download($zipPath, $baseName)->deleteFileAfterSend(true);
     }
 }
